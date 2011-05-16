@@ -1,0 +1,76 @@
+#summary jQuery Stream API Reference
+#labels Featured
+
+=API Reference=
+<wiki:toc max_depth="3" />
+
+== jQuery.stream ==
+
+===jQuery.stream()===
+{{{Stream jQuery.stream()}}}
+
+// TODO
+
+===jQuery.stream(url, {{{[}}}options{{{]}}})===
+{{{Stream jQuery.stream(String url, [Map options])}}}
+
+// TODO
+
+===jQuery.stream.version===
+{{{String jQuery.stream.version}}}
+
+// TODO
+ 
+== jQuery.fn ==
+
+===.streamOpen(handler(event, streamEvent))===
+{{{jQuery .streamOpen(Function handler)}}}
+
+// TODO
+
+===.streamMessage(handler(event, streamEvent))===
+{{{jQuery .streamMessage(Function handler)}}}
+
+// TODO
+
+===.streamError(handler(event, streamEvent))===
+{{{jQuery .streamError(Function handler)}}}
+
+// TODO
+
+===.streamClose(handler(event, streamEvent))===
+{{{jQuery .streamClose(Function handler)}}}
+
+// TODO
+
+== Stream Object ==
+
+===.url===
+{{{String url}}}
+
+// TODO
+
+===.options===
+{{{Map options}}}
+
+// TODO
+
+===.id===
+{{{String id}}}
+
+// TODO
+
+===.readyState===
+{{{Number readyState}}}
+
+// TODO
+
+===.send(data)===
+{{{void .send(Object data)}}}
+
+// TODO
+
+===.close()===
+{{{void .close()}}}
+
+// TODO
