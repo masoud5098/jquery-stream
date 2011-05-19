@@ -1,49 +1,74 @@
-#summary jQuery Stream API Reference
+#summary jQuery Stream 1.0 API Reference
 #labels Featured
-
 =API Reference=
 <wiki:toc max_depth="3" />
 
 == jQuery.stream ==
+The facade of Stream.
 
 ===jQuery.stream()===
 {{{Stream jQuery.stream()}}}
 
-// TODO
+Returns the first Stream in the document.
+
+===jQuery.stream(url)===
+{{{Stream jQuery.stream(String url)}}}
+
+Returns the Stream to which the specified url is mapped. If not found, creates a Stream with the specified url and empty options.
 
 ===jQuery.stream(url, {{{[}}}options{{{]}}})===
 {{{Stream jQuery.stream(String url, [Map options])}}}
 
-// TODO
+Creates a Stream connection (a long-held HTTP request) allowing a server to push data to a client
+
+*url* - Specifies the URL to which to connect.
+
+*options* - Configures the Stream connection.
+
+ <b>reconnect</b> - Whether to automatically reconnect when connection closed. This is set to {{{true}}} by default for continuous stream.
+
+ <b>dataType</b> - The type of data that a server push to a client. The handled data is passed as the {{{data}}} attribute of message event. The supported types are {{{text}}}, {{{json}}} and {{{xml}}}. the default is {{{text}}} itself.
+
+ <b>converters</b> - A map of data-type/data-converter pairs. data-converter takes one argument which is a raw data and returns a transformed data. The default is {{{{text: window.String, json: $.parseJSON, xml: $.parseXML}}}}, {{{jQuery.parseJSON}}} is in 1.4.1 and {{{jQuery.parseXML}}} is in 1.5.
+
+ <b>throbber</b> - Only for Webkit-based browsers such as Chrome and Safari. This option is to remove 'Throbber of doom' which is spinning loading indicator to show the user that a request is performing. The throbber doesn't be removed only when a Stream is created before all the requests such as image, script, iframe and ajax have finished loading, because a streaming connection is HTTP persistent connection. The following strategies are available:
+  lazy - After the window's load event fires and some {{{delay}}}, it opens a Stream connection. The default setting for lazy is {{{{type: "lazy", delay: 50}}}} or simply {{{"lazy"}}}. It is suitable for typical use, unless the page contains many resources so the time taken for loading is very long. This is default.<br/>
+  reconnect - Regardless of the window's load event, it opens a Stream connection immediately and closes it when the window's load event fires. Likewise after some {{{delay}}}, it opens a Stream connection again. The default setting for reconnect is {{{{type: "reconnect", delay: 50}}}} or simply {{{"reconnect"}}}. The request which opens a Stream is used twice, but you can provide seamless Stream for the user navigating pages.
+
+ Since both of the above strategy use the window's load event handler, a logic creating a Stream (i.e {{{jQuery.stream("/stream")}}}) must not be located there in order to work this properly.
+  * iOS Safari and Android Chrome are currently unsupported.
+  * The load event of window doesn't consider Ajax request, so when the event fires not completed Ajax request can get the throbber to keep spinning.
 
 ===jQuery.stream.version===
 {{{String jQuery.stream.version}}}
 
-// TODO
+Contains the version number of jQuery Stream.
  
 == jQuery.fn ==
+Global Stream event handlers.
 
 ===.streamOpen(handler(event, streamEvent))===
 {{{jQuery .streamOpen(Function handler)}}}
 
-// TODO
+Registers a handler to be called when the Stream has opend.
 
 ===.streamMessage(handler(event, streamEvent))===
 {{{jQuery .streamMessage(Function handler)}}}
 
-// TODO
+Registers a handler to be called when the Stream message has been received.
 
 ===.streamError(handler(event, streamEvent))===
 {{{jQuery .streamError(Function handler)}}}
 
-// TODO
+Registers a handler to be called when the Stream error has been detected.
 
 ===.streamClose(handler(event, streamEvent))===
 {{{jQuery .streamClose(Function handler)}}}
 
-// TODO
+Registers a handler to be called when the Stream has closed.
 
 == Stream Object ==
+// TODO
 
 ===.url===
 {{{String url}}}
