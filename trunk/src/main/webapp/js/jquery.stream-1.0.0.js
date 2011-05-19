@@ -401,7 +401,7 @@
 					
 					this.doc.body.appendChild(iframe);
 					
-					// For the server to response in a consistent format regardless of user agent, we polls response text
+					// For the server to respond in a consistent format regardless of user agent, we polls response text
 					var cdoc = iframe.contentDocument || iframe.contentWindow.document;
 
 					iterate(this, function() {
