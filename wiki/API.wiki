@@ -68,12 +68,55 @@ Registers a handler to be called when the Stream error has been detected.
 Registers a handler to be called when the Stream has closed.
 
 == Stream Object ==
-// TODO
+Stream Object is the main agent that provides Comet Streaming using HTTP protocol. It is based on the !WebSocket API which is the ultimate solution to true two-way communication between a client and a server. it will support !WebSocket as a wrapper in the future.
+
+it doesn't rely on any specific server-side technology and third-party plugin-in such as ActiveX and Flash, so can be used with any server-side technology supporting asynchronous processing as long as the server satisfies several requirements.
+
+The Stream constructor is not exposed. Use {{{jQuery.stream}}} instead.
+
+<h3>Open</h3>
+
+When the constructor is called, it sends a GET request which will be a one-way socket receiving a data from a server in real-time. Since the timestamp parameter ({{{_}}}) is always included in the request URL in order to prevent caching, the server doesn't need to configure it. Depending on the browser, the following transports are used to establish a stream connection.
+
+*Hidden Iframe* - For IE6 and IE7. It's different from the traditional way of fetching data sent by the server. it polls the response text manually using {{{setTimeout}}} instead of requiring the server to print {{{<script>}}} tag. That's why the {{{Content-Type}}} of the response header must be set to 'text/plain', not 'text/html'.
+
+*XDomainRequest* - For IE8 and IE9. See [http://blogs.msdn.com/b/ieinternals/archive/2010/04/06/comet-streaming-in-internet-explorer-with-xmlhttprequest-and-xdomainrequest.aspx COMET Streaming in Internet Explorer] and [http://msdn.microsoft.com/en-us/library/cc288060%28VS.85%29.aspx XDomainRequest Object (MSDN)]. it requires padding to enable streaming and an {{{Access-Control-Allow-Origin}}} response header.
+
+*XMLHttpRequest* - For modern browsers except IE. but in the case of Opera, it polls the response text manually using {{{setTimeout}}}.
+
+The transport is chosen automatically according to a user's browser, but changing it is not allowed.
+
+<h3>Sending data</h3>
+
+Because HTTP Streaming is one-way, it simulates a way of transmitting data of full duplex socket like the !WebSocket by performing POST Ajax request. The metadata is a series of the parameters starting with {{{metadata.}}} and included in request body to inform the server of additional data needed by server-side processing. So, following metadata entities are always added to request body.
+
+*metadata.id* - Stream connection identifier.
+
+*metadata.type* - The purpose of request. In most cases, the value is {{{send}}} except a special case such as {{{close}}}.
+
+<h3>Response Requirements</h3>
+
+When responding, the server must meet following requirements.
+
+* Response Header *
+
+ <b>Content-Type</b> - Set to 'text/plain' that is the only one satisfying all streaming transport.
+
+ <b>Access-Control-Allow-Origin</b> - Set to either {{{*}}} or the exact URL of the requesting web page. This header enables response to be shared cross domain, but not cross-domain comet because of obsolete browsers that does not support it. It's just XDomainRequest transport's requirement. For detail information about header, See [http://www.w3.org/TR/access-control/ Cross-Origin Resource Sharing].
+
+* Response Format *
+
+ <b>Id</b> - For further communication, the stream connection id have to be generated and printed at the top of response. It must be unique within the server until stream closes, so random number (or UUID) is ideal. It must end with a semicolon (;). The id and padding have to be transmitted to the client together. Generated id is managed and used by {{{jQuery.stream}}}.
+
+ <b>Padding</b> - The padding is needed by XMLHttpRequest of !WebKit, XDomainRequest and Hidden iframe transport. One kilobyte is usually enough. it have to end with a semicolon (;). If the browser receives response including id and padding, {{{jQuery.stream}}} handles it and fires open event.
+
+ <b>Message</b> - A message consist of size part and data part. Size part contains message's length and data part contains message. Each part must end with a semicolon (;). Every time a message arrived, {{{jQuery.stream}}} handles it and fires message event.
 
 ===.url===
 {{{String url}}}
 
 // TODO
+
 
 ===.options===
 {{{Map options}}}
