@@ -49,7 +49,7 @@ public class ChatServlet extends HttpServlet {
 	});
 	
 	private void sendMessage(PrintWriter writer, String message) {
-		// Sends a message according to the jQuery Stream message format(message-size ; message-data ;) 
+		// Sends a message according to the message format(message-size ; message-data ;) 
 		writer.print(message.length());
 		writer.print(";");
 		writer.print(message);
@@ -63,7 +63,7 @@ public class ChatServlet extends HttpServlet {
 		notifier.start();
 	}
 
-	// GET method is used to establish a stream connection
+	// GET method is used to open stream
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException,
 			IOException {
@@ -79,12 +79,12 @@ public class ChatServlet extends HttpServlet {
 		// each part must end with a semicolon
 		PrintWriter writer = response.getWriter();
 		
-		// UUID is very suitable for the stream connection id
+		// UUID is very suitable
 		final String id = UUID.randomUUID().toString();
 		writer.print(id);
 		writer.print(';');
 		
-		// The padding is needed for XMLHttpRequest transport in WebKit, XDomainRequest transport and Hidden iframe transport
+		// The padding is needed by XMLHttpRequest of WebKit, XDomainRequest and Hidden iframe transport
 		for (int i = 0; i < 1024; i++) {
 			writer.print(' ');
 		}
@@ -116,7 +116,7 @@ public class ChatServlet extends HttpServlet {
 		contexts.put(id, ac);
 	}
 
-	// POST method is used to communicate
+	// POST method is used to handle data sent by user through the stream
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
