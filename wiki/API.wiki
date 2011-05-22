@@ -374,7 +374,6 @@ public class ChatServlet extends HttpServlet {
         request.setCharacterEncoding("utf-8");
         
         if ("close".equals(request.getParameter("metadata.type"))) {
-            // Closes connection by its id
             AsyncContext ac = contexts.get(request.getParameter("metadata.id"));
             if (ac != null) {
                 ac.complete();
