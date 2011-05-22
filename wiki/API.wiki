@@ -25,11 +25,21 @@ Creates a Stream connection (a long-held HTTP request) allowing a server to push
 
 *options* - Configures the Stream connection.
 
- <b>reconnect</b> - Whether to automatically reconnect when connection closed. This is set to {{{true}}} by default for continuous stream.
+ <b>close</b> - A function or an array of functions to be called if the stream closes. Each function receives a event named {{{close}}} as the argument which is based on {{{jQuery.Event}}} and {{{CloseEvent}}} interface.
+
+ <b>context</b> - The value to be passed as {{{this}}} to the callback when the event is triggered.
+
+ <b>converters</b> - A map of data-type/data-converter pairs. data-converter takes one argument which is a raw data and returns a transformed data. The default is {{{{text: window.String, json: $.parseJSON, xml: $.parseXML}}}}, {{{jQuery.parseJSON}}} is in 1.4.1 and {{{jQuery.parseXML}}} is in 1.5.
 
  <b>dataType</b> - The type of data that a server push to a client. The handled data is passed as the {{{data}}} attribute of message event. The supported types are {{{text}}}, {{{json}}} and {{{xml}}}. the default is {{{text}}} itself.
 
- <b>converters</b> - A map of data-type/data-converter pairs. data-converter takes one argument which is a raw data and returns a transformed data. The default is {{{{text: window.String, json: $.parseJSON, xml: $.parseXML}}}}, {{{jQuery.parseJSON}}} is in 1.4.1 and {{{jQuery.parseXML}}} is in 1.5.
+ <b>error</b> - A function or an array of functions to be called if an error is detected. Each function receives a simple event named {{{error}}} as the argument which is based on {{{jQuery.Event}}}.
+
+ <b>message</b> - A function or an array of functions to be called if the stream receives a data. Each function receives a event named {{{message}}} as the argument which is based on {{{jQuery.Event}}} and {{{MessageEvent}}} interface. The event has the data attribute which is sent by the server and is converted according to {{{dataType}}}.
+
+ <b>open</b> - A function or an array of functions to be called if the stream opens. Each function receives a simple event named {{{open}}} as the argument which is based on {{{jQuery.Event}}}.
+
+ <b>reconnect</b> - Whether to automatically reconnect when connection closed. This is set to {{{true}}} by default for continuous stream.
 
  <b>throbber</b> - Only for Webkit-based browsers such as Chrome and Safari. This option is to remove 'Throbber of doom' which is spinning loading indicator to show the user that a request is performing. The throbber doesn't be removed only when a Stream is created before all the requests such as image, script, iframe and ajax have finished loading, because a streaming connection is HTTP persistent connection. The following strategies are available:
   lazy - After the window's load event fires and some {{{delay}}}, it opens a Stream connection. The default setting for lazy is {{{{type: "lazy", delay: 50}}}} or simply {{{"lazy"}}}. It is suitable for typical use, unless the page contains many resources so the time taken for loading is very long. This is default.<br/>
@@ -38,6 +48,102 @@ Creates a Stream connection (a long-held HTTP request) allowing a server to push
  Since both of the above strategy use the window's load event handler, a logic creating a Stream (i.e {{{jQuery.stream("/stream")}}}) must not be located there in order to work this properly.
   * iOS Safari and Android Chrome are currently unsupported.
   * The load event of window doesn't consider Ajax request, so when the event fires not completed Ajax request can get the throbber to keep spinning.
+
+*Example:* Creating a stream with empty options.
+{{{
+$.stream("/stream");
+}}}
+
+*Example:* Stream dispatching a server event into jQuery's event system.
+{{{
+$.stream("/event-stream", {
+    dataType: "json",
+    message: function(event) {
+        // event.data is server event evaluated as a JSON
+        $.event.trigger(event.data.name, event.data.data);
+    }
+});
+}}}
+
+*Example:* Adding custom converter
+{{{
+$.stream("/csv-stream", {
+    dataType: "csv",
+    converters: {
+        "csv" : function(data) {
+            // Comma-separated values
+            return data.split(",");
+        }
+    }
+});
+}}}
+
+*Example:* Introducing {{{this}}} to the callbacks.
+{{{
+$.stream("/notice", {
+    dataType: "xml",
+    context: $("#notice")[0],
+    message: function(event) {
+        $("<p class='message'>"+event.data.message+"</p>").prependTo(this);
+    }
+});
+}}}
+
+*Example:* Disposable stream.
+{{{
+$.stream("/countdown.jsp", {
+    reconnect: false,
+    message: function(event) {
+        $("<p>"+event.data+"</p>").appendTo("#panel");
+    }
+});
+}}}
+
+*Example:* Stopping the throbber using reconnect strategy with 100ms delay.
+{{{
+$.stream("/test.action", {
+    throbber: {type: "reconnect", delay: 100}
+});
+}}}
+
+*Example:* Stream with all callbacks.
+{{{
+$.stream("/chat", {
+    dataType: "json",
+    context: $("#content")[0],
+    open: function() {
+        $("#editor").removeAttr("disabled").focus();
+        $.stream().send({username: chat.username, message: "Hello"});
+    },
+    message: function(event) {
+        $("<p />").addClass("message").text(event.data.message).appendTo(this);
+    },
+    error: function() {
+        $("<p />").addClass("message").text("Error").appendTo(this);
+        $("#editor").attr("disabled", "disabled");
+    },
+    close: function() {
+        $("<p />").addClass("message").text("Close").appendTo(this);
+        $("#editor").attr("disabled", "disabled");
+    }
+});
+}}}
+
+*Example:* Retrieving a stream.
+{{{
+$.stream("/stream", {dataType: "json"});
+
+$("#notice-form :button").click(function() {
+    $.stream("/stream").send({ts: new Date().getTime()});
+    return false;
+});
+
+$("#message-form :text").keyup(function(event) {
+    if (event.which === 13) {
+        $.stream().send({message: this.value});
+    }
+});
+}}}
 
 ===jQuery.stream.version===
 {{{String jQuery.stream.version}}}
@@ -52,20 +158,50 @@ Global Stream event handlers.
 
 Registers a handler to be called when the Stream has opend.
 
+*Example:* Focusing the text input box when Stream opens.
+{{{
+$("#form :text").streamOpen(function() {
+    $(this).focus();
+});
+}}}
+
 ===.streamMessage(handler(event, streamEvent))===
 {{{jQuery .streamMessage(Function handler)}}}
 
 Registers a handler to be called when the Stream message has been received.
+
+*Example:* Showing a server-sent message whenever Stream receives a message.
+{{{
+$("#messages").streamMessage(function(e, event) {
+    $("<p />").addClass("message").html(event.data.message).appendTo(this);
+});
+}}}
 
 ===.streamError(handler(event, streamEvent))===
 {{{jQuery .streamError(Function handler)}}}
 
 Registers a handler to be called when the Stream error has been detected.
 
+*Example:* Hiding the text input box when Stream whose url is '/test' detects a error.
+{{{
+$("#form :text").streamError(function() {
+    if (e.target.url === "/test") {
+        $(this).prop("disabled", true).hide("fast");
+    }
+});
+}}}
+
 ===.streamClose(handler(event, streamEvent))===
 {{{jQuery .streamClose(Function handler)}}}
 
 Registers a handler to be called when the Stream has closed.
+
+*Example:* Disabling the button when Stream closes.
+{{{
+$("#form :button").streamClose(function(e) {
+    $(this).prop("disabled", true);
+});
+}}}
 
 == Stream Object ==
 Stream Object is the main agent that provides Comet Streaming using HTTP protocol. It is based on [http://dev.w3.org/html5/websockets/ The WebSocket API] which is the ultimate solution to true two-way communication between a client and a server. it will support !WebSocket as a wrapper in the future.
@@ -116,6 +252,158 @@ When responding, the server must meet following requirements.
 
  <b>Message</b> - A message consist of size part and data part. Size part contains message's length and data part contains message. Each part must end with a semicolon (;). Every time a message arrived, jQuery Stream handles it and fires message event.
 
+*Example:* Chat in Java Servlet 3.0
+{{{
+package flowersinthesand.example;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.google.gson.Gson;
+
+@WebServlet(urlPatterns = "/chat", asyncSupported = true)
+public class ChatServlet extends HttpServlet {
+
+    private static final long serialVersionUID = -2919167206889576860L;
+    private Map<String, AsyncContext> contexts = new ConcurrentHashMap<String, AsyncContext>();
+    private BlockingQueue<String> messages = new LinkedBlockingQueue<String>();
+    private Thread notifier = new Thread(new Runnable() {
+        public void run() {
+            boolean done = false;
+            while (!done) {
+                String message = null;
+                try {
+                    message = messages.take();
+                    for (AsyncContext ac : contexts.values()) {
+                        try {
+                            sendMessage(ac.getResponse().getWriter(), message);
+                        } catch (IOException e) {
+                            contexts.remove(ac);
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    done = true;
+                }
+            }
+        }
+    });
+    
+    private void sendMessage(PrintWriter writer, String message) {
+        // Message
+        writer.print(message.length());
+        writer.print(";");
+        writer.print(message);
+        writer.print(";");
+        writer.flush();
+    }
+
+    @Override
+    public void init(ServletConfig config) throws ServletException {
+        super.init(config);
+        notifier.start();
+    }
+
+    // GET method is used to open stream
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException,
+            IOException {
+        response.setCharacterEncoding("utf-8");
+        
+        // Content-Type header
+        response.setContentType("text/plain");
+        
+        // Access-Control-Allow-Origin header
+        response.setHeader("Access-Control-Allow-Origin", "*");
+
+        PrintWriter writer = response.getWriter();
+        
+        // Id
+        final String id = UUID.randomUUID().toString();
+        writer.print(id);
+        writer.print(';');
+        
+        // Padding
+        for (int i = 0; i < 1024; i++) {
+            writer.print(' ');
+        }
+        writer.print(';');
+        writer.flush();
+        
+        final AsyncContext ac = request.startAsync();
+        ac.setTimeout(5 * 60 * 1000);
+        ac.addListener(new AsyncListener() {
+            public void onComplete(AsyncEvent event) throws IOException {
+                contexts.remove(id);
+            }
+
+            public void onTimeout(AsyncEvent event) throws IOException {
+                contexts.remove(id);
+            }
+
+            public void onError(AsyncEvent event) throws IOException {
+                contexts.remove(id);
+            }
+
+            public void onStartAsync(AsyncEvent event) throws IOException {
+
+            }
+        });
+        contexts.put(id, ac);
+    }
+
+    // POST method is used to handle data sent by user through the stream
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.setCharacterEncoding("utf-8");
+        
+        if ("close".equals(request.getParameter("metadata.type"))) {
+            // Closes connection by its id
+            AsyncContext ac = contexts.get(request.getParameter("metadata.id"));
+            if (ac != null) {
+                ac.complete();
+            }
+            
+            return;
+        }
+
+        Map<String, String> data = new LinkedHashMap<String, String>();
+        data.put("username", request.getParameter("username"));
+        data.put("message", request.getParameter("message"));
+
+        try {
+            messages.put(new Gson().toJson(data));
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+    }
+
+    @Override
+    public void destroy() {
+        messages.clear();
+        contexts.clear();
+        notifier.interrupt();
+    }
+
+}
+}}}
+
 ===.url===
 {{{String url}}}
 
@@ -134,7 +422,27 @@ The current stream id generated by the server.
 ===.readyState===
 {{{Number readyState}}}
 
-The state of the stream. it is the same as !WebSocket's readyState in terms of meaning.
+The state of the stream. It is the same as !WebSocket's readyState in terms of meaning.
+
+*Example:* Checking the state of the stream.
+{{{
+$("#stream-state").click(function() {
+    switch ($.stream().readyState) {
+    case 0:
+        alert("CONNECTING");
+        break;
+    case 1:
+        alert("OPEN");
+        break;
+    case 2:
+        alert("CLOSING");
+        break;
+    case 3:
+        alert("CLOSED");
+        break;
+    }
+});
+}}}
 
 ===.send(data)===
 {{{void .send(Object data)}}}
@@ -143,7 +451,21 @@ Transmits data through the stream.
 
 *data* - The data to be sent to the server. If not already a string, it is converted to a query string by {{{jQuery.param}}}.
 
+*Example: * Transmitting the mouse position.
+{{{
+$(document).click(function(event) {
+    $.stream().send({x: event.pageX, y: event.pageY});
+});
+}}}
+
 ===.close()===
 {{{void .close()}}}
 
-Aborts the stream.
+Disconnects the stream.
+
+*Example: * Closing the stream.
+{{{
+$("#close-stream").click(function() {
+    $.stream().close();
+});
+}}}
