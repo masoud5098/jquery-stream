@@ -4,7 +4,7 @@
 	<groupId>flowersinthesand</groupId>
 	<artifactId>jquery-stream</artifactId>
 	<name>jQuery Stream</name>
-	<version>1.0.0</version>
+	<version>1.0</version>
 	<packaging>war</packaging>
 	<description>Comet Streaming JavaScript Library</description>
 	<url>http://code.google.com/p/jquery-stream/</url>
@@ -54,6 +54,46 @@
 					<failOnMissingWebXml>false</failOnMissingWebXml>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.6</version>
+				<executions>
+					<execution>
+						<id>release</id>
+						<phase>package</phase>
+						<configuration>
+							<target>
+								<property name="target.path" value="target/js" />
+								
+								<delete dir="${target.path}"/>
+								<mkdir dir="${target.path}"/>
+								
+								<copy file="src/main/webapp/js/jquery.stream.js" todir="${target.path}" />
+								
+ 								<taskdef name="jscomp" classname="com.google.javascript.jscomp.ant.CompileTask" classpath="${ant.refid:maven.runtime.classpath}" />
+								<jscomp compilationLevel="simple" output="${target.path}/jquery.stream.min.js">
+									<sources dir="${target.path}">
+										<file name="jquery.stream.js"/>
+									</sources>
+								</jscomp>
+									
+								<replaceregexp match="@VERSION" replace="${project.version}" flags="g" byline="true" >
+									<fileset dir="${target.path}" includes="*.js" />
+								</replaceregexp>
+								
+								<move todir="${target.path}">
+									<fileset dir="${target.path}" includes="*.js" />
+									<globmapper from="jquery.stream*" to="jquery.stream-${project.version}*" />
+								</move>
+							</target>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 	
@@ -68,6 +108,12 @@
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
 			<version>1.7.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.javascript</groupId>
+			<artifactId>closure-compiler</artifactId>
+			<version>r1043</version>
+			<scope>runtime</scope>
 		</dependency>
 	</dependencies>
 	

@@ -1,5 +1,5 @@
-/*!
- * jQuery Stream 1.0.0
+/*
+ * jQuery Stream @VERSION
  * Comet Streaming JavaScript Library 
  * http://code.google.com/p/jquery-stream/
  * 
@@ -500,7 +500,7 @@
 		return Stream.instances[url] || new Stream(url, options);
 	};
 	
-	$.stream.version = "1.0.0";
+	$.stream.version = "@VERSION";
 	
 	$.each("streamOpen streamMessage streamError streamClose".split(" "), function(i, o) {
 		$.fn[o] = function(f) {
