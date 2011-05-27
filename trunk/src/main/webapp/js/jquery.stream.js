@@ -65,8 +65,7 @@
 						self.options.close.push(function() {
 							self.options.close.pop();
 							setTimeout(function() {
-								self.readyState = 0;
-								self.open();
+								new Stream(self.url, self.options);
 							}, self.options.throbber.delay || 50);
 						});
 						
@@ -263,8 +262,7 @@
 				
 				// Reconnect?
 				if (this.options.reconnect === true) {
-					this.readyState = 0;
-					this.open();
+					new Stream(this.url, this.options);
 				}
 			}
 		},
