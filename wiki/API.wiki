@@ -288,11 +288,11 @@ public class ChatServlet extends HttpServlet {
                 String message = null;
                 try {
                     message = messages.take();
-                    for (AsyncContext ac : contexts.values()) {
+                    for (Entry<String, AsyncContext> entry : contexts.entrySet()) {
                         try {
-                            sendMessage(ac.getResponse().getWriter(), message);
+                            sendMessage(entry.getValue().getResponse().getWriter(), message);
                         } catch (IOException e) {
-                            contexts.remove(ac);
+                            contexts.remove(entry.getKey());
                         }
                     }
                 } catch (InterruptedException e) {
