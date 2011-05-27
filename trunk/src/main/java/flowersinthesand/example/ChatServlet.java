@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,11 +35,11 @@ public class ChatServlet extends HttpServlet {
 				String message = null;
 				try {
 					message = messages.take();
-					for (AsyncContext ac : contexts.values()) {
+					for (Entry<String, AsyncContext> entry : contexts.entrySet()) {
 						try {
-							sendMessage(ac.getResponse().getWriter(), message);
+							sendMessage(entry.getValue().getResponse().getWriter(), message);
 						} catch (IOException e) {
-							contexts.remove(ac);
+							contexts.remove(entry.getKey());
 						}
 					}
 				} catch (InterruptedException e) {
