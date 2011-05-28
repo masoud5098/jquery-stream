@@ -488,14 +488,17 @@
 	}
 	
 	$.stream = function(url, options) {
-		if (!arguments.length) {
+		switch (arguments.length) {
+		case 0:
 			for (var i in Stream.instances) {
 				return Stream.instances[i];
 			}
 			return null;
+		case 1:
+			return Stream.instances[url] || null;
+		default:
+			return Stream.instances[url] && Stream.instances[url].readyState !== 3 ? Stream.instances[url] : new Stream(url, options);
 		}
-		
-		return Stream.instances[url] || new Stream(url, options);
 	};
 	
 	$.stream.version = "@VERSION";
