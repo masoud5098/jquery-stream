@@ -51,7 +51,7 @@ Creates a Stream connection (a long-held HTTP request) allowing a server to push
 
 *Example:* Creating a stream with empty options.
 {{{
-$.stream("/stream");
+$.stream("/stream", {});
 }}}
 
 *Example:* Stream dispatching a server-sent event into jQuery's event system.
