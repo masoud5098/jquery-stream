@@ -1,4 +1,4 @@
-#summary jQuery Stream 1.0 API Reference
+#summary jQuery Stream 1.0.1 API Reference
 #labels Featured
 =API Reference=
 <wiki:toc max_depth="3" />
@@ -14,12 +14,12 @@ Returns the first Stream in the document.
 ===jQuery.stream(url)===
 {{{Stream jQuery.stream(String url)}}}
 
-Returns the Stream to which the specified url is mapped. If not found, creates a Stream with the specified url and empty options.
+Returns the Stream to which the specified url is mapped.
 
-===jQuery.stream(url, {{{[}}}options{{{]}}})===
-{{{Stream jQuery.stream(String url, [Map options])}}}
+===jQuery.stream(url, options)===
+{{{Stream jQuery.stream(String url, Map options)}}}
 
-Creates a Stream connection (a long-held HTTP request) allowing a server to push data to a client
+Creates a Stream connection (a long-held HTTP request) allowing a server to push data to a client only if the Stream to which the given url is mapped doesn't exist or does exist and is closed.
 
 *url* - Specifies the URL to which to connect.
 
