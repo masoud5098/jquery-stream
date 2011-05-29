@@ -29,14 +29,10 @@
 					this.scrollTop = this.scrollHeight;
 				},
 				error: function() {
-					$("<p />").addClass("message").text("Error").appendTo(this);
 					$("#editor .message").attr("disabled", "disabled");
-					this.scrollTop = this.scrollHeight;
 				},
 				close: function() {
-					$("<p />").addClass("message").text("Close").appendTo(this);
 					$("#editor .message").attr("disabled", "disabled");
-					this.scrollTop = this.scrollHeight;
 				}
 			});
 			
