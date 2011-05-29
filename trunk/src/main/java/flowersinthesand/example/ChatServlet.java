@@ -47,13 +47,13 @@ public class ChatServlet extends WebSocketServlet {
 							writer.print(message);
 							writer.print(";");
 							writer.flush();
-						} catch (IOException e) {
+						} catch (Exception e) {
 							asyncContexts.values().remove(asyncContext);
 						}
 					}
-					for (WebSocket webSocket : webSockets) {
+					for (ChatWebSocket webSocket : webSockets) {
 						try {
-							((ChatWebSocket) webSocket).connection.sendMessage(message);
+							webSocket.connection.sendMessage(message);
 						} catch (Exception e) {
 							webSockets.remove(webSocket);
 						}
@@ -79,7 +79,7 @@ public class ChatServlet extends WebSocketServlet {
 		notifier.interrupt();
 	}
 
-	/* HTTP Streaming */
+	/* HTTP Streaming powered by Servlet 3.0 */
 	private Map<String, AsyncContext> asyncContexts = new ConcurrentHashMap<String, AsyncContext>();
 
 	// GET method is used to open stream
@@ -157,8 +157,8 @@ public class ChatServlet extends WebSocketServlet {
 		}
 	}
 
-	/* WebSocket */
-	private Queue<WebSocket> webSockets = new ConcurrentLinkedQueue<WebSocket>();
+	/* WebSocket powered by Jetty */
+	private Queue<ChatWebSocket> webSockets = new ConcurrentLinkedQueue<ChatWebSocket>();
 
 	@Override
 	public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol) {
