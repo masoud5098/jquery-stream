@@ -322,7 +322,7 @@
 							lastEventId: "", 
 							source: null, 
 							ports: null, 
-							openMessageEvent: $.noop
+							initMessageEvent: $.noop
 						});
 					}
 					
