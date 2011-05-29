@@ -154,7 +154,6 @@
 		
 		// WebSocket
 		ws: {
-			
 			open: function() {
 				var self = this;
 				
@@ -204,7 +203,6 @@
 					}
 				};
 			},
-			
 			send: function(data) {
 				if (this.readyState === 0) {
 					$.error("INVALID_STATE_ERR: Stream not open");
@@ -212,7 +210,6 @@
 				
 				this.ws.send(typeof data === "string" ? data : $.param(data, $.ajaxSettings.traditional));
 			},
-			
 			close: function() {
 				if (this.readyState < 2) {
 					this.readyState = 2;
@@ -224,10 +221,6 @@
 		
 		// HTTP Streaming
 		http: {
-			
-			// Current stream's identifier within the server
-			id: null,
-			
 			send: function(data) {
 				if (this.readyState === 0) {
 					$.error("INVALID_STATE_ERR: Stream not open");
@@ -257,7 +250,6 @@
 					}).call(this);
 				}
 			},
-			
 			close: function() {
 				// Do nothing if the readyState is in the CLOSING or CLOSED
 				if (this.readyState < 2) {
@@ -271,7 +263,6 @@
 					this.abort();
 				}
 			},
-			
 			paramMetadata: function(type, props) {
 				// Always includes stream id and communication type
 				props = $.extend({}, props, {id: this.id, type: type});
@@ -283,7 +274,6 @@
 				
 				return $.param(answer);
 			},
-			
 			handleResponse: function(text) {
 				if (this.readyState === 0) {
 					// The top of the response is made up of the id and padding
@@ -345,7 +335,6 @@
 					this.message.data = "";
 				}
 			},
-			
 			handleClose: function(isError) {
 				var readyState = this.readyState;
 				this.readyState = 3;
@@ -386,7 +375,6 @@
 					}
 				}
 			}
-			
 		}
 	
 	});
