@@ -1,5 +1,10 @@
 <%
 	if ("GET".equals(request.getMethod())) {
+		if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade"))) {
+			response.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED);
+			return;
+		}
+		
 		response.setContentType("text/plain");
 		response.setHeader("Access-Control-Allow-Origin", "*");
 

@@ -10,8 +10,8 @@
 			$.stream("./countdown.jsp", {reconnect: false});
 			
 			$(document)
-			.streamOpen(function(e, event) {
-				$("<p />").appendTo("body").text("Open, id: " + event.target.id);
+			.streamOpen(function(e, event, stream) {
+				$("<p />").appendTo("body").text("Open, id: " + stream.id);
 			})
 			.streamMessage(function(e, event) {
 				$("<p />").appendTo("body").text(event.data);
