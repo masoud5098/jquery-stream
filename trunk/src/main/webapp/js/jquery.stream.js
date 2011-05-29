@@ -19,8 +19,8 @@
 		});
 	}
 	
-	// Stream is based on The WebSocket API
-	// http://dev.w3.org/html5/websockets/
+	// Stream is based on The WebSocket API 
+	// W3C Working Draft 19 April 2011 - http://www.w3.org/TR/2011/WD-websockets-20110419/
 	function Stream(url, options) {
 		// Assigns url and merges options
 		this.url = url;
