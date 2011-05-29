@@ -5,10 +5,21 @@
 		<servlet-class>flowersinthesand.example.ChatServlet</servlet-class>
 		<async-supported>true</async-supported>
 	</servlet>
+
+	<servlet>
+		<servlet-name>HttpChat</servlet-name>
+		<servlet-class>flowersinthesand.example.HttpChatServlet</servlet-class>
+		<async-supported>true</async-supported>
+	</servlet>
 	
 	<servlet-mapping>
 		<servlet-name>Chat</servlet-name>
 		<url-pattern>/chat</url-pattern>
+	</servlet-mapping>
+	
+	<servlet-mapping>
+		<servlet-name>HttpChat</servlet-name>
+		<url-pattern>/httpchat</url-pattern>
 	</servlet-mapping>
 
 </web-app>
