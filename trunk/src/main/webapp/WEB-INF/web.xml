@@ -1,10 +1,11 @@
-<web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" version="3.0" metadata-complete="false">
+<web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" version="3.0">
 
 	<servlet>
 		<servlet-name>Chat</servlet-name>
 		<servlet-class>flowersinthesand.example.ChatServlet</servlet-class>
+		<async-supported>true</async-supported>
 	</servlet>
-
+	
 	<servlet-mapping>
 		<servlet-name>Chat</servlet-name>
 		<url-pattern>/chat</url-pattern>
