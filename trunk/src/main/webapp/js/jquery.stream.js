@@ -196,9 +196,7 @@
 					$.error("INVALID_STATE_ERR: Stream not open");
 				}
 				
-				this.ws.send(data == null || typeof data === "string" || data.constructor !== Object ? 
-					data : 
-					$.param(data, $.ajaxSettings.traditional));
+				this.ws.send(typeof data === "string" ? data : $.param(data, $.ajaxSettings.traditional));
 			},
 			
 			close: function() {
@@ -223,9 +221,7 @@
 				
 				if (arguments.length) {
 					// Converts data if not already a string and pushes it into the data queue
-					this.dataQueue.push(!data ? 
-						"" : 
-						((typeof data === "string" ? data : $.param(data, $.ajaxSettings.traditional)) + "&"));
+					this.dataQueue.push((typeof data === "string" ? data : $.param(data, $.ajaxSettings.traditional)) + "&");
 				}
 				
 				if (this.sending !== true) {
