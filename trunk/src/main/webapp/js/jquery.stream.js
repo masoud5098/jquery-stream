@@ -164,10 +164,24 @@
 					self.trigger(event);
 				};
 				this.ws.onmessage = function(event) {
-					var e = document.createEvent("MessageEvent"),
-						data = typeof event.data !== "string" ? event.data : self.options.converters[self.options.dataType](event.data);
+					if (event.noHandle) {
+						return;
+					}
 					
-					e.initMessageEvent(event.type, event.bubbles, event.cancelable, data, event.origin, event.lastEventId, event.source, event.ports);
+					var e = document.createEvent("MessageEvent");
+					
+					e.noHandle = true;
+					e.initMessageEvent(event.type, 
+						event.bubbles, 
+						event.cancelable, 
+						self.options.converters[self.options.dataType](event.data), 
+						event.origin, 
+						event.lastEventId, 
+						event.source, 
+						event.ports);
+					this.dispatchEvent(e);
+					delete e.noHandle;
+					
 					self.trigger(e);
 				};
 				this.ws.onerror = function(event) {
