@@ -12,6 +12,12 @@
 		<async-supported>true</async-supported>
 	</servlet>
 	
+	<servlet>
+		<servlet-name>Echo</servlet-name>
+		<servlet-class>flowersinthesand.example.EchoServlet</servlet-class>
+		<async-supported>true</async-supported>
+	</servlet>
+	
 	<servlet-mapping>
 		<servlet-name>Chat</servlet-name>
 		<url-pattern>/chat</url-pattern>
@@ -20,6 +26,11 @@
 	<servlet-mapping>
 		<servlet-name>HttpChat</servlet-name>
 		<url-pattern>/httpchat</url-pattern>
+	</servlet-mapping>
+
+	<servlet-mapping>
+		<servlet-name>Echo</servlet-name>
+		<url-pattern>/echo</url-pattern>
 	</servlet-mapping>
 
 </web-app>
