@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
@@ -182,16 +184,11 @@ public class ChatServlet extends WebSocketServlet {
 
 		@Override
 		public void onMessage(String queryString) {
+			Map<String, List<String>> parameters = parseQueryString(queryString);
+
 			Map<String, String> data = new LinkedHashMap<String, String>();
-			for (String parameter : queryString.split("&")) {
-				String[] entities = parameter.split("=");
-				try {
-					data.put(URLDecoder.decode(entities[0], "utf-8"),
-							URLDecoder.decode(entities[1], "utf-8"));
-				} catch (UnsupportedEncodingException e) {
-					throw new RuntimeException(e);
-				}
-			}
+			data.put("username", parameters.get("username").get(0));
+			data.put("message", parameters.get("message").get(0));
 
 			try {
 				messages.put(new Gson().toJson(data));
@@ -200,6 +197,24 @@ public class ChatServlet extends WebSocketServlet {
 			}
 		}
 
+		private Map<String, List<String>> parseQueryString(String data) {
+			Map<String, List<String>> answer = new LinkedHashMap<String, List<String>>();
+			for (String parameter : data.split("&")) {
+				String[] entities = parameter.split("=");
+				try {
+					String key = URLDecoder.decode(entities[0], "utf-8");
+					if (!answer.containsKey(key)) {
+						answer.put(key, new ArrayList<String>());
+					}
+
+					answer.get(key).add(URLDecoder.decode(entities[1], "utf-8"));
+				} catch (UnsupportedEncodingException e) {
+					throw new RuntimeException(e);
+				}
+			}
+
+			return answer;
+		}
 	}
 
 }
