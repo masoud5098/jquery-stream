@@ -1,10 +1,12 @@
 #summary Two-Way Communication Example between Web Page Using jQuery Stream and WebSocket/HTTP Echo Server
 
 = Echo Example =
+<wiki:toc max_depth="3" />
+
+== Web Page ==
 // TODO
 
-== Client-Side Code ==
-// TODO
+{{{/echo.html}}}
 {{{
 <!DOCTYPE html>
 <html>
@@ -17,7 +19,7 @@
         $(function() {
             $.stream("./echo", {
                 open: function() {
-                    $("#textfield").removeAttr("disabled");
+                    $("#textfield").removeAttr("disabled").focus();
                 },
                 message: function(event) {
                     $("<p />").text(event.data).prependTo("#content");
@@ -38,7 +40,8 @@
         <style>
         body {padding: 0; margin: 0; font-family: 'Trebuchet MS','Malgun Gothic'; font-size: 62.5%; color: #333333}
         #editor {margin: 15px 25px;}
-        #textfield {width: 100%; height: 28px; line-height: 28px; font-family: 'Trebuchet MS','Malgun Gothic'; border: medium none; border-color: #E5E5E5 #DBDBDB #D2D2D2; border-style: solid; border-width: 1px;}
+        #textfield {width: 100%; height: 28px; line-height: 28px; font-family: 'Trebuchet MS','Malgun Gothic'; 
+                    border: medium none; border-color: #E5E5E5 #DBDBDB #D2D2D2; border-style: solid; border-width: 1px;}
         #content {height: 100%; overflow-y: auto; padding: 0 25px;}
         #content p {margin: 0; padding: 0; font-size: 1.3em; color: #444444; line-height: 1.7em; word-wrap: break-word;}
         </style>
@@ -55,8 +58,153 @@
 == Server-Side Code ==
 // TODO
 
+{{{/echo}}}
+
 === Java - Servlet 3.0 ===
 // TODO
 
 === Java - Servlet 3.0 and Jetty 8 ===
 // TODO
+
+{{{web.xml}}}
+{{{
+<web-app 
+    xmlns="http://java.sun.com/xml/ns/javaee" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" 
+    version="3.0">
+
+    <servlet>
+        <servlet-name>Echo</servlet-name>
+        <servlet-class>flowersinthesand.example.EchoServlet</servlet-class>
+        <async-supported>true</async-supported>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>Echo</servlet-name>
+        <url-pattern>/echo</url-pattern>
+    </servlet-mapping>
+
+</web-app>
+}}}
+{{{flowersinthesand.example.EchoServlet}}}
+{{{
+package flowersinthesand.example;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.WebSocketServlet;
+
+public class EchoServlet extends WebSocketServlet {
+
+    private static final long serialVersionUID = -8823775068689773674L;
+
+    private Map<String, AsyncContext> asyncContexts = new ConcurrentHashMap<String, AsyncContext>();
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setCharacterEncoding("utf-8");
+        response.setContentType("text/plain");
+        response.setHeader("Access-Control-Allow-Origin", "*");
+
+        PrintWriter writer = response.getWriter();
+
+        final String id = UUID.randomUUID().toString();
+        writer.print(id);
+        writer.print(';');
+
+        for (int i = 0; i < 1024; i++) {
+            writer.print(' ');
+        }
+        writer.print(';');
+        writer.flush();
+
+        final AsyncContext ac = request.startAsync();
+        ac.setTimeout(5 * 60 * 1000);
+        ac.addListener(new AsyncListener() {
+            public void onComplete(AsyncEvent event) throws IOException {
+                asyncContexts.remove(id);
+            }
+
+            public void onTimeout(AsyncEvent event) throws IOException {
+                asyncContexts.remove(id);
+            }
+
+            public void onError(AsyncEvent event) throws IOException {
+                asyncContexts.remove(id);
+            }
+
+            public void onStartAsync(AsyncEvent event) throws IOException {
+
+            }
+        });
+        asyncContexts.put(id, ac);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.setCharacterEncoding("utf-8");
+
+        AsyncContext ac = asyncContexts.get(request.getParameter("metadata.id"));
+        if (ac == null) {
+            return;
+        }
+
+        if ("close".equals(request.getParameter("metadata.type"))) {
+            ac.complete();
+            return;
+        }
+
+        String message = request.getParameter("message");
+        PrintWriter writer = ac.getResponse().getWriter();
+
+        writer.print(message.length() + ";" + message + ";");
+        writer.flush();
+    }
+
+    @Override
+    public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol) {
+        return new WebSocket.OnTextMessage() {
+
+            Connection connection;
+
+            @Override
+            public void onOpen(Connection connection) {
+                this.connection = connection;
+            }
+
+            @Override
+            public void onClose(int closeCode, String message) {
+
+            }
+
+            @Override
+            public void onMessage(String data) {
+                UrlEncoded parameters = new UrlEncoded(data);
+                try {
+                    connection.sendMessage(parameters.getString("message"));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+        };
+    }
+
+}
+}}}
