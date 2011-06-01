@@ -22,6 +22,7 @@
 	// Stream is based on The WebSocket API 
 	// W3C Working Draft 19 April 2011 - http://www.w3.org/TR/2011/WD-websockets-20110419/
 	function Stream(url, options) {
+		
 		// Assigns url and merges options
 		this.url = url;
 		this.options = $.extend(true, {}, this.options, options);
@@ -107,8 +108,8 @@
 			},
 			// Options per transport
 			ws: {
-				enabled: !!window.WebSocket,
-				protocol: null
+				enabled: !!window.WebSocket
+				// protocols: null
 			},
 			xhr: {
 				
@@ -155,9 +156,10 @@
 		// WebSocket
 		ws: {
 			open: function() {
-				var self = this;
+				var self = this,
+					url = prepareURL($("<a />", {href: this.url})[0].href.replace(/^http/g, "ws"));
 				
-				this.ws = new WebSocket(prepareURL($("<a />", {href: this.url})[0].href.replace(/^http/g, "ws")), this.options.ws.protocol);
+				this.ws = this.options.ws.protocols ? new window.WebSocket(url, this.options.ws.protocols) : new window.WebSocket(url);
 				this.ws.onopen = function(event) {
 					self.readyState = 1;
 					self.trigger(event);
