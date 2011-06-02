@@ -198,8 +198,9 @@
 					self.trigger(event);
 				};
 				this.ws.onclose = function(event) {
-					// HTTP Streaming fallback
-					if (self.readyState === 0 && !only) {
+					var readyState = self.readyState; 
+					
+					if (readyState === 0 && !only) {
 						self.options.ws.enabled = false;
 						new Stream(self.url, self.options);
 						return;
@@ -208,7 +209,7 @@
 					self.readyState = 3;
 					self.trigger(event);
 					
-					if (self.options.reconnect === true) {
+					if (self.options.reconnect === true && readyState !== 0) {
 						new Stream(self.url, self.options);
 					}
 				};
