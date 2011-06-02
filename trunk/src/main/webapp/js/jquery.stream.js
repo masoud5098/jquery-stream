@@ -32,14 +32,17 @@
 			this.options[i] = $.makeArray(this.options[i]); 
 		}
 		
-		// Extends prototype for WebSocket or HTTP Streaming
-		$.extend(this, this.options.ws.enabled ? Stream.ws : Stream.http);
-		
 		// The url is a identifier of this instance within the document
 		Stream.instances[this.url] = this;
 		
+		// Selects the protocol to be used to construct a stream
+		var match = /^(http|ws)s?:/.exec(this.url),
+			scheme = (match && match[1]) || (this.options.ws.enabled ? "ws" : "http");
+		
+		$.extend(this, Stream[scheme]);
+		
 		var self = this;
-		if (this.options.ws.enabled || !throbber) {
+		if (scheme === "ws" || !throbber) {
 			setTimeout(function() {
 				self.open();
 			}, 0);
@@ -156,6 +159,11 @@
 		// WebSocket
 		ws: {
 			open: function() {
+				var only = /^(ws)s?:/.test(this.url);
+				if (only && !window.WebSocket) {
+					return;
+				}
+				
 				var self = this,
 					url = prepareURL($("<a />", {href: this.url})[0].href.replace(/^http/g, "ws"));
 				
@@ -192,8 +200,11 @@
 				this.ws.onclose = function(event) {
 					// HTTP Streaming fallback
 					if (self.readyState === 0) {
-						self.options.ws.enabled = false;
-						new Stream(self.url, self.options);
+						if (!only) {
+							self.options.ws.enabled = false;
+							new Stream(self.url, self.options);
+						}
+						
 						return;
 					}
 					
