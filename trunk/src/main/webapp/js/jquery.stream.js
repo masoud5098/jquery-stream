@@ -27,13 +27,16 @@
 		this.url = url;
 		this.options = $.extend(true, {}, this.options, options);
 		
-		// Normalizes callbacks
-		for (var i in {open: 1, message: 1, error: 1, close: 1}) {
+		// Converts a value into a array
+		for (var i in {open: 1, message: 1, error: 1, close: 1, alias: 1}) {
 			this.options[i] = $.makeArray(this.options[i]); 
 		}
 		
-		// The url is a identifier of this instance within the document
-		Stream.instances[this.url] = this;
+		// The url and alias are a identifier of this instance within the document
+		this.options.alias.push(this.url);
+		for (var alias, i = 0; alias = this.options.alias[i]; i++) {
+			Stream.instances[alias] = this;
+		}
 		
 		// Selects the protocol to be used to construct a stream
 		var match = /^(http|ws)s?:/.exec(this.url),
@@ -113,6 +116,7 @@
 			ws: {
 				enabled: !!window.WebSocket
 				// protocols: null
+				// fallback: null
 			},
 			xhr: {
 				
@@ -202,7 +206,7 @@
 					
 					if (readyState === 0 && !only) {
 						self.options.ws.enabled = false;
-						new Stream(self.url, self.options);
+						new Stream(self.options.ws.fallback || self.url, self.options);
 						return;
 					}
 					
