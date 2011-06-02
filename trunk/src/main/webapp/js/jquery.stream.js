@@ -173,13 +173,13 @@
 					self.trigger(event);
 				};
 				this.ws.onmessage = function(event) {
-					if (event.noHandle) {
+					if (event.dispatched) {
 						return;
 					}
 					
 					var e = document.createEvent("MessageEvent");
 					
-					e.noHandle = true;
+					e.dispatched = true;
 					e.initMessageEvent(event.type, 
 						event.bubbles, 
 						event.cancelable, 
@@ -189,7 +189,7 @@
 						event.source, 
 						event.ports);
 					this.dispatchEvent(e);
-					delete e.noHandle;
+					delete e.dispatched;
 					
 					self.trigger(e);
 				};
@@ -199,12 +199,9 @@
 				};
 				this.ws.onclose = function(event) {
 					// HTTP Streaming fallback
-					if (self.readyState === 0) {
-						if (!only) {
-							self.options.ws.enabled = false;
-							new Stream(self.url, self.options);
-						}
-						
+					if (self.readyState === 0 && !only) {
+						self.options.ws.enabled = false;
+						new Stream(self.url, self.options);
 						return;
 					}
 					
