@@ -1,4 +1,5 @@
 #summary Two-Way Communication Example between Web Page Using jQuery Stream and WebSocket/HTTP Echo Server
+#labels Deprecated
 
 = Echo Example =
 <wiki:toc max_depth="3" />
