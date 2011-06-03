@@ -1,0 +1,6 @@
+#summary Guide for Required Server-Side Processing
+#labels Deprecated
+
+= Server-Side Processing =
+==!WebSocket==
+==HTTP Streaming==
