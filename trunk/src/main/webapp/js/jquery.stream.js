@@ -132,14 +132,7 @@
 		trigger: function(event, props) {
 			event = event.type ? 
 				event : 
-				$.extend($.Event(event), {
-					eventPhase: 2, 
-					currentTarget: this, 
-					srcElement: this, 
-					target: this, 
-					bubbles: false, 
-					cancelable: false
-				}, props);
+				$.extend($.Event(event), {bubbles: false, cancelable: false}, props);
 			
 			var applyArgs = [event, this];
 			
@@ -340,8 +333,7 @@
 							origin: "", 
 							lastEventId: "", 
 							source: null, 
-							ports: null, 
-							initMessageEvent: $.noop
+							ports: null
 						});
 					}
 					
@@ -364,9 +356,8 @@
 						// Pseudo CloseEvent
 						this.trigger("close", {
 							wasClean: false, 
-							code: "", 
-							reason: "", 
-							initCloseEvent: $.noop
+							code: null, 
+							reason: ""
 						});
 						break;
 					case 1:
@@ -379,9 +370,8 @@
 					this.trigger("close", {
 						// Presumes that the stream closed cleanly
 						wasClean: true, 
-						code: "", 
-						reason: "", 
-						initCloseEvent: $.noop
+						code: null, 
+						reason: ""
 					});
 					
 					// Reconnect?
