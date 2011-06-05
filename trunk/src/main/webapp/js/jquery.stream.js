@@ -170,13 +170,13 @@
 					self.trigger(event);
 				};
 				this.ws.onmessage = function(event) {
-					if (event.dispatched) {
+					if (event.noHandle) {
 						return;
 					}
 					
 					var e = document.createEvent("MessageEvent");
 					
-					e.dispatched = true;
+					e.noHandle = true;
 					e.initMessageEvent(event.type, 
 						event.bubbles, 
 						event.cancelable, 
@@ -186,7 +186,7 @@
 						event.source, 
 						event.ports);
 					this.dispatchEvent(e);
-					delete e.dispatched;
+					delete e.noHandle;
 					
 					self.trigger(e);
 				};
