@@ -1,4 +1,4 @@
-#summary jQuery Stream 1.0.1 API Reference
+#summary jQuery Stream 1.1 API Reference
 #labels Featured
 =API Reference=
 <wiki:toc max_depth="3" />
@@ -19,11 +19,13 @@ Returns the Stream to which the specified url is mapped.
 ===jQuery.stream(url, options)===
 {{{Stream jQuery.stream(String url, Map options)}}}
 
-Creates a Stream connection (a long-held HTTP request) allowing a server to push data to a client only if the Stream to which the given url is mapped doesn't exist or does exist and is closed.
+Creates a Stream connection (a long-held HTTP request or a !WebSocket connection) allowing a server to push data to a client only if the Stream to which the given url is mapped doesn't exist or does exist and is closed.
 
-*url* - Specifies the URL to which to connect.
+*url* - Specifies the URL to which to connect. If it starts with !WebSocket protocol such as ws: or wss:, the stream simply behaves as a wrapper for !WebSocket without fallback. If it starts with HTTP protocol such as http: or https:, the stream performs HTTP streaming. Otherwise, the stream wraps !WebSocket or performs HTTP Streaming according to whether browser support !WebSocket or not. If browser support !WebSocket but server does not, the stream performs HTTP Streaming using the same url after failing try to open !WebSocket connection.
 
 *options* - Configures the Stream connection.
+
+ <b>alias</b> <font size="1">(added in 1.1)</font> - An alias of the url. When retrieving the stream instance by the url, you can use it instead of the lengthy url.
 
  <b>close</b> - A function or an array of functions to be called if the stream closes. Each function receives a event named {{{close}}} as the argument which is based on {{{jQuery.Event}}} and {{{CloseEvent}}} interface.
 
@@ -33,7 +35,7 @@ Creates a Stream connection (a long-held HTTP request) allowing a server to push
 
  <b>dataType</b> - The type of data that a server push to a client. The handled data is passed as the {{{data}}} attribute of message event. The supported types are {{{text}}}, {{{json}}} and {{{xml}}}. the default is {{{text}}} itself.
 
- <b>error</b> - A function or an array of functions to be called if an error is detected. Each function receives a simple event named {{{error}}} as the argument which is based on {{{jQuery.Event}}}.
+ <b>error</b> - A function or an array of functions to be called if an error is detected. Each function receives a simple event named {{{error}}} as the argument which is based on {{{jQuery.Event}}}. The usage of this option isn't recommended because {{{onerror}}} attribute have been excluded from {{{WebSocket}}} interface recently.
 
  <b>message</b> - A function or an array of functions to be called if the stream receives a data. Each function receives a event named {{{message}}} as the argument which is based on {{{jQuery.Event}}} and {{{MessageEvent}}} interface. The event has the data attribute which is sent by the server and is converted according to {{{dataType}}}.
 
@@ -48,6 +50,10 @@ Creates a Stream connection (a long-held HTTP request) allowing a server to push
  Since both of the above strategy use the window's load event handler, a logic creating a Stream (i.e {{{jQuery.stream("/stream")}}}) must not be located there in order to work this properly.
   * iOS Safari and Android Chrome are currently unsupported.
   * The load event of window doesn't consider ajax request, so when the event fires, incompleted Ajax request can get the throbber to keep spinning.
+
+ <b>ws</b> <font size="1">(added in 1.1)</font> - Options for !WebSocket.
+  protocols - An argument to be used to create !WebSocket instance.<br/>
+  fallback - If it fails to establish !WebSocket connection, this value will be used to open HTTP connection as url.
 
 *Example:* Creating a stream with empty options.
 {{{
@@ -141,6 +147,12 @@ $("#message-form :text").keyup(function(event) {
         $.stream().send({message: this.value});
     }
 });
+
+// Using alias
+$.stream("http://localhost:8080/jquery-stream/event-stream", {alias: "event"});
+$("#close").click(function() {
+    $.stream("event").close();
+});
 }}}
 
 ===jQuery.stream.version===
@@ -151,7 +163,7 @@ Contains the version number of jQuery Stream.
 == jQuery.fn ==
 Global Stream event handlers.
 
-===.streamOpen(handler(event, streamEvent))===
+===.streamOpen(handler(event, streamEvent, stream))===
 {{{jQuery .streamOpen(Function handler)}}}
 
 Registers a handler to be called when the Stream has opend.
@@ -163,7 +175,7 @@ $("#form :text").streamOpen(function() {
 });
 }}}
 
-===.streamMessage(handler(event, streamEvent))===
+===.streamMessage(handler(event, streamEvent, stream))===
 {{{jQuery .streamMessage(Function handler)}}}
 
 Registers a handler to be called when the Stream has received a message.
@@ -175,10 +187,10 @@ $("#messages").streamMessage(function(e, event) {
 });
 }}}
 
-===.streamError(handler(event, streamEvent))===
+===.streamError(handler(event, streamEvent, stream))===
 {{{jQuery .streamError(Function handler)}}}
 
-Registers a handler to be called when the Stream has detected a error.
+Registers a handler to be called when the Stream has detected a error. The usage of this function isn't recommended because {{{onerror}}} attribute have been excluded from {{{WebSocket}}} interface recently.
 
 *Example:* Hiding the text input box when Stream whose url is '/test' detects a error.
 {{{
@@ -189,7 +201,7 @@ $("#form :text").streamError(function(e, event) {
 });
 }}}
 
-===.streamClose(handler(event, streamEvent))===
+===.streamClose(handler(event, streamEvent, stream))===
 {{{jQuery .streamClose(Function handler)}}}
 
 Registers a handler to be called when the Stream has closed.
