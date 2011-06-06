@@ -267,18 +267,6 @@ Because HTTP Streaming is one-way, it simulates a way of transmitting data of fu
 
 As mentioned above, because HTTP Streaming is one-way, streaming connection remains still open after aborting it in client-side. Therefore, when closing stream jQuery Stream sends a POST request whose metadata type is {{{close}}}.
 
-<h3>Response Requirements</h3>
-
-TODO: This part will be moved to ServerSideProcessing
-
-When responding, the server must meet following requirements.
-
-* Response Header *
-
- <b>Content-Type</b> - Set to 'text/plain' that is the only one satisfying all streaming transport.
-
- <b>Access-Control-Allow-Origin</b> - Set to either {{{*}}} or the exact URL of the requesting web page. This header enables response to be shared cross domain, but not cross-domain comet because of obsolete browsers that does not support it. It's just XDomainRequest transport's requirement. For detail information about header, see [http://www.w3.org/TR/access-control/ Cross-Origin Resource Sharing].
-
 ===.url===
 {{{String url}}}
 
