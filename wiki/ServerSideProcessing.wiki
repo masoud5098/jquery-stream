@@ -1,6 +1,91 @@
 #summary Guide for Required Server-Side Processing
-#labels Deprecated
 
 = Server-Side Processing =
 ==!WebSocket==
+// TODO
+===Handling message===
+// TODO
+
 ==HTTP Streaming==
+===Prerequisite===
+
+When the server receives HTTP GET request, it must respond meeting the following requirements. 
+
+====!WebSocket Opening Handshake====
+
+If the server only support HTTP Streaming and stream object whose url doesn't start with http: or https: is created in browser supporting !WebSocket, server receives !WebSocket opening handshake. For specific processing, it have to be ignored.
+
+====Response Header====
+
+ <b>Content-Type</b> - Set to 'text/plain' that is the only one satisfying all streaming transport.
+
+ <b>Access-Control-Allow-Origin</b> - Set to either {{{*}}} or the exact URL of the requesting web page. This header enables response to be shared cross domain, but not cross-domain comet because of obsolete browsers that does not support it. It's just XDomainRequest transport's requirement. For detail information about header, see [http://www.w3.org/TR/access-control/ Cross-Origin Resource Sharing].
+
+====Response Format====
+
+ <b>Id</b> - For further communication, the stream connection id have to be generated and printed at the top of response. It must be unique within the server until the stream closes, so random number (or UUID) is ideal. It must end with a semicolon (;). The id and padding have to be transmitted to the client together. Generated id is managed and used by jQuery Stream.
+
+ <b>Padding</b> - The padding is needed by XMLHttpRequest of !WebKit, XDomainRequest and Hidden iframe transport. One kilobyte is usually enough. it have to end with a semicolon (;). If the browser receives response including id and padding, jQuery Stream handles it and fires open event.
+
+*Example:* Meeting HTTP Streaming prerequisites in Java
+{{{
+protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
+
+    // Rejects WebSocket opening handshake
+    if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade"))) {
+        // 501 Not Implemented
+        response.sendError(501);
+        return;
+    }
+
+    response.setCharacterEncoding("utf-8");
+
+    // Content-Type header
+    response.setContentType("text/plain");
+
+    // Access-Control-Allow-Origin header
+    response.setHeader("Access-Control-Allow-Origin", "*");
+
+    PrintWriter writer = response.getWriter();
+
+    // Id
+    String id = UUID.randomUUID().toString();
+    writer.print(id);
+    writer.print(';');
+
+    // Padding
+    for (int i = 0; i < 1024; i++) {
+        writer.print(' ');
+    }
+    writer.print(';');
+    writer.flush();
+
+    // ...
+}
+}}}
+===Sending message===
+A message to be sent to client consists of size part and data part. The size part contains message's length and the data part contains message itself. Each part must end with a semicolon (;). Every time a message arrived, jQuery Stream handles it and fires message event.
+{{{
+PrintWriter writer = asyncContext.getResponse().getWriter();
+writer.print(message.length());
+writer.print(";");
+writer.print(message);
+writer.print(";");
+writer.flush();
+}}}
+===Handling message===
+// TODO
+
+====Close===
+// TODO
+{{{
+if ("close".equals(request.getParameter("metadata.type"))) {
+    AsyncContext ac = asyncContexts.get(request.getParameter("metadata.id"));
+    if (ac != null) {
+        ac.complete();
+    }
+
+    return;
+}
+}}}
