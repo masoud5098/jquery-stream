@@ -66,26 +66,49 @@ protected void doGet(HttpServletRequest request, HttpServletResponse response)
 }}}
 ===Sending message===
 A message to be sent to client consists of size part and data part. The size part contains message's length and the data part contains message itself. Each part must end with a semicolon (;). Every time a message arrived, jQuery Stream handles it and fires message event.
+
+*Example:* Method sending message in Java
 {{{
-PrintWriter writer = asyncContext.getResponse().getWriter();
-writer.print(message.length());
-writer.print(";");
-writer.print(message);
-writer.print(";");
-writer.flush();
+private void sendMessage(AsyncContext asyncContext, String message) throws IOException {
+    PrintWriter writer = asyncContext.getResponse().getWriter();
+    writer.print(message.length());
+    writer.print(";");
+    writer.print(message);
+    writer.print(";");
+    writer.flush();
+}
 }}}
 ===Handling message===
-// TODO
+HTTP POST request contains data sent by client via stream and every request has metadata which is parameters starting with {{{metadata.}}}. The following types of requests indicated by {{{metadata.type}}} parameter are sent by jQuery Stream.
 
-====Close===
-// TODO
+====Send====
+Dealing with {{{send}}} request created by calling {{{send}}} method of Stream object in browser-based application is depending on your server-side application.
+
+====Close====
+{{{close}}} request is notification that browser closed a stream, therefore this request requires the server to finish that stream to avoid the waste of server resources.
+
+*Example:* Handling message in Java
 {{{
-if ("close".equals(request.getParameter("metadata.type"))) {
+protected void doPost(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
+    request.setCharacterEncoding("utf-8");
+
     AsyncContext ac = asyncContexts.get(request.getParameter("metadata.id"));
-    if (ac != null) {
-        ac.complete();
+    if (ac == null) {
+        return;
     }
 
-    return;
+    // Close
+    if ("close".equals(request.getParameter("metadata.type"))) {
+        ac.complete();
+        return;
+    }
+
+    // Send
+    String message = request.getParameter("message");
+    PrintWriter writer = ac.getResponse().getWriter();
+
+    writer.print(message.length() + ";" + message + ";");
+    writer.flush();
 }
 }}}
