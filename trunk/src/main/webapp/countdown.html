@@ -7,7 +7,7 @@
 		<script type="text/javascript" src="./js/jquery.stream.js"></script>
 		<script type="text/javascript">
 		$(function() {
-			$.stream("./countdown.jsp", {reconnect: false});
+			$.stream("./countdown.jsp", {type: "http", reconnect: false});
 			
 			$(document)
 			.streamOpen(function(e, event, stream) {
