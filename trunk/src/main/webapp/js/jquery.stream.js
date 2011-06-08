@@ -113,7 +113,7 @@
 				json: $.parseJSON, 
 				// jQuery.parseXML is in jQuery 1.5
 				xml: $.parseXML
-			},
+			}
 			// WebSocket constructor argument
 			// protocols: null
 		},
