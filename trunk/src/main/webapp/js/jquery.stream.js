@@ -39,13 +39,13 @@
 		}
 		
 		// Selects the protocol to be used to construct a stream
-		var match = /^(http|ws)s?:/.exec(this.url),
-			scheme = (match && match[1]) || (this.options.ws.enabled ? "ws" : "http");
+		var match = /^(http|ws)s?:/.exec(this.url);
+		this.options.type = (match && match[1]) || this.options.type;
 		
-		$.extend(this, Stream[scheme]);
+		$.extend(this, Stream[this.options.type]);
 		
 		var self = this;
-		if (scheme === "ws" || !throbber) {
+		if (this.options.type === "ws" || !throbber) {
 			setTimeout(function() {
 				self.open();
 			}, 0);
@@ -112,12 +112,12 @@
 				// jQuery.parseXML is in jQuery 1.5
 				xml: $.parseXML
 			},
-			// Options per transport
+			type: window.WebSocket ? "ws" : "http",
+			// Options for WebSocket
 			ws: {
-				enabled: !!window.WebSocket
 				// protocols: null
-				// fallback: null
 			},
+			// Options per transport for HTTP Streaming
 			xhr: {
 				
 			},
@@ -156,13 +156,12 @@
 		// WebSocket
 		ws: {
 			open: function() {
-				var only = /^(ws)s?:/.test(this.url);
-				if (only && !window.WebSocket) {
+				if (!window.WebSocket) {
 					return;
 				}
 				
 				var self = this,
-					url = prepareURL(getAbsoluteURL(this.url).replace(/^http/g, "ws"));
+					url = prepareURL(getAbsoluteURL(this.url).replace(/^http/, "ws"));
 				
 				this.ws = this.options.ws.protocols ? new window.WebSocket(url, this.options.ws.protocols) : new window.WebSocket(url);
 				this.ws.onopen = function(event) {
@@ -196,12 +195,6 @@
 				};
 				this.ws.onclose = function(event) {
 					var readyState = self.readyState; 
-					
-					if (readyState === 0 && !only) {
-						self.options.ws.enabled = false;
-						new Stream(self.options.ws.fallback || self.url, self.options);
-						return;
-					}
 					
 					self.readyState = 3;
 					self.trigger(event);
