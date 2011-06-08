@@ -38,7 +38,7 @@
 			Stream.instances[alias] = this;
 		}
 		
-		// Selects the protocol to be used to construct a stream
+		// Stream type
 		var match = /^(http|ws)s?:/.exec(this.url);
 		this.options.type = (match && match[1]) || this.options.type;
 		
@@ -98,6 +98,8 @@
 		
 		// Default options
 		options: {
+			// Stream type
+			type: window.WebSocket ? "ws" : "http",
 			// Whether to automatically reconnect when stream closed
 			reconnect: true,
 			// Only for WebKit
@@ -112,21 +114,8 @@
 				// jQuery.parseXML is in jQuery 1.5
 				xml: $.parseXML
 			},
-			type: window.WebSocket ? "ws" : "http",
-			// Options for WebSocket
-			ws: {
-				// protocols: null
-			},
-			// Options per transport for HTTP Streaming
-			xhr: {
-				
-			},
-			xdr: {
-				
-			},
-			iframe: {
-				
-			}
+			// WebSocket constructor argument
+			// protocols: null
 		},
 		
 		trigger: function(event, props) {
@@ -163,7 +152,7 @@
 				var self = this,
 					url = prepareURL(getAbsoluteURL(this.url).replace(/^http/, "ws"));
 				
-				this.ws = this.options.ws.protocols ? new window.WebSocket(url, this.options.ws.protocols) : new window.WebSocket(url);
+				this.ws = this.options.protocols ? new window.WebSocket(url, this.options.protocols) : new window.WebSocket(url);
 				this.ws.onopen = function(event) {
 					self.readyState = 1;
 					self.trigger(event);
