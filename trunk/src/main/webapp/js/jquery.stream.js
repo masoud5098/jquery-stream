@@ -162,7 +162,7 @@
 				}
 				
 				var self = this,
-					url = prepareURL($("<a />", {href: this.url})[0].href.replace(/^http/g, "ws"));
+					url = prepareURL(getAbsoluteURL(this.url).replace(/^http/g, "ws"));
 				
 				this.ws = this.options.ws.protocols ? new window.WebSocket(url, this.options.ws.protocols) : new window.WebSocket(url);
 				this.ws.onopen = function(event) {
@@ -210,6 +210,14 @@
 						new Stream(self.url, self.options);
 					}
 				};
+				
+				// Works even in IE6
+				function getAbsoluteURL(url) {
+					var div = document.createElement('div');
+					div.innerHTML = "<a href='" + decodeURIComponent(url) + "'/>";
+
+					return div.firstChild.href; 
+				}
 			},
 			send: function(data) {
 				if (this.readyState === 0) {
