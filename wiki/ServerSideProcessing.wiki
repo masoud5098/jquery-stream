@@ -2,9 +2,42 @@
 
 = Server-Side Processing =
 ==!WebSocket==
-// TODO
 ===Handling message===
-// TODO
+If Stream object receives a non-string data, the stream creates a query string representing that data by using {{{jQuery.param}}} and transmits it to the server. Therefore, the server-side application should decode parameters as if handles HTTP POST request's body.
+
+*Example:* Creating a parameters map in Jetty 8 (Java Servlet Container)
+{{{
+@Override
+// Called with a complete text message when all fragments have been received.
+public void onMessage(String queryString) {
+    Map<String, List<String>> parameters = parseQueryString(queryString);
+
+    Map<String, String> data = new LinkedHashMap<String, String>();
+    data.put("username", parameters.get("username").get(0));
+    data.put("message", parameters.get("message").get(0));
+    
+    // ...
+}
+
+private Map<String, List<String>> parseQueryString(String data) {
+    Map<String, List<String>> answer = new LinkedHashMap<String, List<String>>();
+    for (String parameter : data.split("&")) {
+        String[] entities = parameter.split("=");
+        try {
+            String key = URLDecoder.decode(entities[0], "utf-8");
+            if (!answer.containsKey(key)) {
+                answer.put(key, new ArrayList<String>());
+            }
+
+            answer.get(key).add(URLDecoder.decode(entities[1], "utf-8"));
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    return answer;
+}
+}}}
 
 ==HTTP Streaming==
 ===Prerequisite===
@@ -13,7 +46,7 @@ When the server receives HTTP GET request, it must respond meeting the following
 
 ====!WebSocket Opening Handshake====
 
-If the server only support HTTP Streaming and stream object whose url doesn't start with http: or https: is created in browser supporting !WebSocket, server receives !WebSocket opening handshake. For specific processing, it have to be ignored.
+If the server only support HTTP Streaming, server may receive !WebSocket opening handshake. For specific processing, it have to be ignored.
 
 ====Response Header====
 
