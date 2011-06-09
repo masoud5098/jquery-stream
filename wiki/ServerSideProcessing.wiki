@@ -3,7 +3,7 @@
 = Server-Side Processing =
 ==!WebSocket==
 ===Handling message===
-If Stream object receives a non-string data, the stream creates a query string representing that data by using {{{jQuery.param}}} and transmits it to the server. Therefore, the server-side application should decode parameters as if handles HTTP POST request's body.
+If Stream object receives a non-string data, the stream creates a query string representing that data by using {{{jQuery.param}}} and transmits it to the server. Therefore, the server-side application should decode the query string as if handles HTTP POST request's body.
 
 *Example:* Creating a parameters map in Jetty 8 (Java Servlet Container)
 {{{
@@ -44,9 +44,9 @@ private Map<String, List<String>> parseQueryString(String data) {
 
 When the server receives HTTP GET request, it must respond meeting the following requirements. 
 
-====!WebSocket Opening Handshake====
+====Rejecting !WebSocket Opening Handshake====
 
-If the server only support HTTP Streaming, server may receive !WebSocket opening handshake. For specific processing, it have to be ignored.
+The server supporting only HTTP Streaming may receive !WebSocket opening handshake. For specific processing, it have to be ignored.
 
 ====Response Header====
 
@@ -115,10 +115,10 @@ private void sendMessage(AsyncContext asyncContext, String message) throws IOExc
 HTTP POST request contains data sent by client via stream and every request has metadata which is parameters starting with {{{metadata.}}}. The following types of requests indicated by {{{metadata.type}}} parameter are sent by jQuery Stream.
 
 ====Send====
-Dealing with {{{send}}} request created by calling {{{send}}} method of Stream object in browser-based application is depending on your server-side application.
+Dealing with {{{send}}} request created by calling {{{send}}} method of Stream object in browser is depending on your server-side application.
 
 ====Close====
-{{{close}}} request is notification that browser closed a stream, therefore this request requires the server to finish that stream to avoid the waste of server resources.
+{{{close}}} request is notification that browser closed a stream, therefore the server have to finish that stream to avoid the waste of server resources.
 
 *Example:* Handling message in Java
 {{{
