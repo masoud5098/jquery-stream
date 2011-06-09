@@ -198,7 +198,7 @@
 					var div = document.createElement('div');
 					div.innerHTML = "<a href='" + url + "'/>";
 
-					return encodeURI(decodeURI(div.firstChild.href));
+					return div.firstChild.href;
 				}
 			},
 			send: function(data) {
