@@ -14,6 +14,9 @@
 				message: function(event) {
 					$("<p />").text(event.data).prependTo("#content");
 				},
+				error: function() {
+					$("#textfield").attr("disabled", "disabled");
+				},
 				close: function() {
 					$("#textfield").attr("disabled", "disabled");
 				}
