@@ -196,9 +196,9 @@
 				// Works even in IE6
 				function getAbsoluteURL(url) {
 					var div = document.createElement('div');
-					div.innerHTML = "<a href='" + decodeURIComponent(url) + "'/>";
+					div.innerHTML = "<a href='" + url + "'/>";
 
-					return div.firstChild.href; 
+					return encodeURI(decodeURI(div.firstChild.href));
 				}
 			},
 			send: function(data) {
