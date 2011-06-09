@@ -28,14 +28,14 @@
 		this.options = $.extend(true, {}, this.options, options);
 		
 		// Converts a value into a array
-		for (var i in {open: 1, message: 1, error: 1, close: 1, alias: 1}) {
+		for (var i in {open: 1, message: 1, error: 1, close: 1}) {
 			this.options[i] = $.makeArray(this.options[i]); 
 		}
 		
 		// The url and alias are a identifier of this instance within the document
-		this.options.alias.push(this.url);
-		for (var alias, i = 0; alias = this.options.alias[i]; i++) {
-			Stream.instances[alias] = this;
+		Stream.instances[this.url] = this;
+		if (this.options.alias) {
+			Stream.instances[this.options.alias] = this;
 		}
 		
 		// Stream type
