@@ -154,8 +154,10 @@ $.stream("/chat", {
     message: function(event, stream) {
         $("<p />").addClass("message").text(event.data.message).appendTo(this);
     },
+    error: function() {
+        $("#editor").attr("disabled", "disabled");
+    },
     close: function() {
-        $("<p />").addClass("message").text("Close").appendTo(this);
         $("#editor").attr("disabled", "disabled");
     }
 });
