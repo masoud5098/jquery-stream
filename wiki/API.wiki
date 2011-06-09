@@ -55,6 +55,12 @@ Creates a Stream connection (a long-held HTTP request or a !WebSocket connection
 
  <b>type</b> <font size="1">(added in 1.1)</font> - The type of stream. The default is {{{ws}}} when !WebSocket is available, {{{http}}} otherwise.
 
+*The !WebSocket API where Stream Object bases*
+
+[http://www.w3.org/TR/2011/WD-websockets-20110419/ W3C Working Draft 19 April 2011]
+
+Currently, the role of {{{error}}} event is ambiguous according to latest [http://dev.w3.org/html5/websockets/ W3C editor's draft] and [http://www.w3.org/TR/websockets/ W3C working draft] of The !WebSocket API specification. For the moment, I recommend {{{error}}} event handler set to the same handler of {{{close}}} event because they mean that whatever the reason the stream is closed.
+
 *Example:* Stream wrapping a !WebSocket instance. If browser doesn't implement !WebSocket, nothing happens.
 {{{
 // Absolute path
