@@ -4,7 +4,20 @@
 <wiki:toc max_depth="3" />
 
 == jQuery.stream ==
-The facade of Stream.
+The facade of Stream. 
+
+The mapping between the jQuery version and the jQuery Stream version is:
+|| *jQuery Stream version* || *jQuery version* ||
+|| 1.x || 1.4||
+
+*Version 1.1*
+
+When migrating from 1.0, you must add the {{{type}}} option having {{{http}}} as a value to stream options.
+ * !WebSocket support
+ * alias option
+
+*Version 1.0*
+ * HTTP Streaming support
 
 ===jQuery.stream()===
 {{{Stream jQuery.stream()}}}
