@@ -1,11 +1,16 @@
 #summary Two-Way Communication Example between Web Page Using jQuery Stream and WebSocket/HTTP Echo Server
-#labels Deprecated
 
 = Echo Example =
 <wiki:toc max_depth="3" />
 
 == Web Page ==
-// TODO
+Web Page is an echo client.
+
+Whenever user enters a message, the page makes !JavaScript object containing it and send it to the echo server using the jQuery Stream, and when a message returns from the server, the page displays it.
+
+According to the server support, the stream type may have to be set to {{{http}}} and its URL may have to be modified.
+
+Since the web page is plain HTML page and the jQuery Stream is plain JavaScript library, they don't need any server-side support, so choose a server implementation in [#WebSocket_/HTTP_Echo_Server WebSocket/HTTP Echo Server] according to your preference.
 
 {{{/echo.html}}}
 {{{
@@ -24,6 +29,9 @@
                 },
                 message: function(event) {
                     $("<p />").text(event.data).prependTo("#content");
+                },
+                error: function() {
+                    $("#textfield").attr("disabled", "disabled");
                 },
                 close: function() {
                     $("#textfield").attr("disabled", "disabled");
@@ -56,13 +64,17 @@
 </html>
 }}}
 
-== Server-Side Code ==
-// TODO
+== !WebSocket/HTTP Echo Server ==
+!WebSocket/HTTP Echo Server is just a typical echo server which sends back the client's message through ws or http protocol.
 
-{{{/echo}}}
+See ServerSideProcessing for details about what methods do what.
+
+If you have implemented the server logic using technology or platform not listed, please annotate it and create a issue to append that code to this wiki.
 
 === Java - Servlet 3.0 ===
-// TODO
+The Servlet 3.0 specification includes support for asynchronous processing of request, but there is no support for !WebSocket.
+
+The following example runs with any servlet container implementing Servlet 3.0 such as Tomcat 7 and Jetty 8 only via HTTP protocol.
 
 {{{flowersinthesand.example.EchoServlet}}}
 {{{
@@ -162,7 +174,9 @@ public class EchoServlet extends HttpServlet {
 }}}
 
 === Java - Servlet 3.0 and Jetty 8 ===
-// TODO
+Jetty 8 implements Servlet 3.0 and also provides !WebSocket based on servlet.
+
+Currently, Jetty 8.0.0 M3 does not seem to support new annotations.
 
 {{{web.xml}}}
 {{{
@@ -185,6 +199,7 @@ public class EchoServlet extends HttpServlet {
 
 </web-app>
 }}}
+
 {{{flowersinthesand.example.EchoServlet}}}
 {{{
 package flowersinthesand.example;
