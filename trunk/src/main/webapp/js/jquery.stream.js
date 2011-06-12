@@ -516,7 +516,6 @@
 			},
 			abort: function() {
 				this.doc.execCommand("Stop");
-				this.doc = null;
 			}
 		}
 		
