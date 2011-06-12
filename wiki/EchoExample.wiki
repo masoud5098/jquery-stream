@@ -95,6 +95,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+// Registers a servlet by newly introduced annotation, @WebServlet
 @WebServlet(urlPatterns = "/chat", asyncSupported = true)
 public class EchoServlet extends HttpServlet {
 
@@ -102,30 +103,41 @@ public class EchoServlet extends HttpServlet {
 
     private Map<String, AsyncContext> asyncContexts = new ConcurrentHashMap<String, AsyncContext>();
 
+    // GET method is used to open stream
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {    
+            throws ServletException, IOException {
+        
+        // Rejects WebSocket opening handshake
         if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade"))) {
             response.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED);
             return;
         }
 
         response.setCharacterEncoding("utf-8");
+
+        // Content-Type header
         response.setContentType("text/plain");
+
+        // Access-Control-Allow-Origin header
         response.setHeader("Access-Control-Allow-Origin", "*");
 
         PrintWriter writer = response.getWriter();
 
+        // Id
         final String id = UUID.randomUUID().toString();
         writer.print(id);
         writer.print(';');
 
+        // Padding
         for (int i = 0; i < 1024; i++) {
             writer.print(' ');
         }
         writer.print(';');
         writer.flush();
 
+        // Starts asynchronous mode
+        // AsyncContext, AsyncListener and AsyncEvent are used for asynchronous operation
         final AsyncContext ac = request.startAsync();
         ac.setTimeout(5 * 60 * 1000);
         ac.addListener(new AsyncListener() {
@@ -145,19 +157,24 @@ public class EchoServlet extends HttpServlet {
 
             }
         });
+
+        // Manages AsyncContext instances by the id
         asyncContexts.put(id, ac);
     }
 
+    // POST method is used to handle data sent by user via the stream
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("utf-8");
 
+        // Finds AsyncContext instance by stream id
         AsyncContext ac = asyncContexts.get(request.getParameter("metadata.id"));
         if (ac == null) {
             return;
         }
 
+        // Close request means that browser closed this stream
         if ("close".equals(request.getParameter("metadata.type"))) {
             ac.complete();
             return;
@@ -166,6 +183,7 @@ public class EchoServlet extends HttpServlet {
         String message = request.getParameter("message");
         PrintWriter writer = ac.getResponse().getWriter();
 
+        // Sends message
         writer.print(message.length() + ";" + message + ";");
         writer.flush();
     }
@@ -174,7 +192,7 @@ public class EchoServlet extends HttpServlet {
 }}}
 
 === Java - Servlet 3.0 and Jetty 8 ===
-Jetty 8 implements Servlet 3.0 and also provides !WebSocket based on servlet.
+Jetty is a servlet container, implements Servlet 3.0 and also provides !WebSocket based on servlet.
 
 Currently, Jetty 8.0.0 M3 does not seem to support new annotations.
 
@@ -221,6 +239,7 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketServlet;
 
+// WebSocketServlet extending HttpServlet is base class
 public class EchoServlet extends WebSocketServlet {
 
     private static final long serialVersionUID = -8823775068689773674L;
@@ -290,8 +309,11 @@ public class EchoServlet extends WebSocketServlet {
         writer.flush();
     }
 
+    // Handles WebSocket connection
     @Override
     public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol) {
+
+        // WebSocket for receiving text messages
         return new WebSocket.OnTextMessage() {
 
             Connection connection;
@@ -308,6 +330,7 @@ public class EchoServlet extends WebSocketServlet {
 
             @Override
             public void onMessage(String data) {
+                // Decodes query string
                 UrlEncoded parameters = new UrlEncoded(data);
                 try {
                     connection.sendMessage(parameters.getString("message"));
