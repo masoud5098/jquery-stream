@@ -126,10 +126,8 @@
 			var applyArgs = [event, this];
 			
 			// Triggers local event handlers
-			if (this.options[event.type].length) {
-				for (var fn, i = 0; fn = this.options[event.type][i]; i++) {
-					fn.apply(this.options.context, applyArgs);
-				}
+			for (var fn, i = 0; fn = this.options[event.type][i]; i++) {
+				fn.apply(this.options.context, applyArgs);
 			}
 
 			// Triggers global event handlers
@@ -153,45 +151,52 @@
 					url = prepareURL(getAbsoluteURL(this.url).replace(/^http/, "ws"));
 				
 				this.ws = this.options.protocols ? new window.WebSocket(url, this.options.protocols) : new window.WebSocket(url);
-				this.ws.onopen = function(event) {
-					self.readyState = 1;
-					self.trigger(event);
-				};
-				this.ws.onmessage = function(event) {
-					if (event.noHandle) {
-						return;
+				
+				// WebSocket event handlers
+				$.extend(this.ws, {
+					onopen: function() {
+						self.readyState = 1;
+						self.trigger(event);
+					},
+					onmessage: function() {
+						if (event.noHandle) {
+							return;
+						}
+						
+						// Creates a message event to convert data type
+						var e = document.createEvent("MessageEvent");
+						
+						// To avoid handling
+						e.noHandle = true;
+						e.initMessageEvent(event.type, 
+							event.bubbles, 
+							event.cancelable, 
+							self.options.converters[self.options.dataType](event.data), 
+							event.origin, 
+							event.lastEventId, 
+							event.source, 
+							event.ports);
+						this.dispatchEvent(e);
+						delete e.noHandle;
+						
+						self.trigger(e);
+					},
+					onerror: function() {
+						self.options.reconnect = false;
+						self.trigger(event);
+					},
+					onclose: function() {
+						var readyState = self.readyState; 
+						
+						self.readyState = 3;
+						self.trigger(event);
+
+						// Reconnect?
+						if (self.options.reconnect === true && readyState !== 0) {
+							new Stream(self.url, self.options);
+						}
 					}
-					
-					var e = document.createEvent("MessageEvent");
-					
-					e.noHandle = true;
-					e.initMessageEvent(event.type, 
-						event.bubbles, 
-						event.cancelable, 
-						self.options.converters[self.options.dataType](event.data), 
-						event.origin, 
-						event.lastEventId, 
-						event.source, 
-						event.ports);
-					this.dispatchEvent(e);
-					delete e.noHandle;
-					
-					self.trigger(e);
-				};
-				this.ws.onerror = function(event) {
-					self.options.reconnect = false;
-					self.trigger(event);
-				};
-				this.ws.onclose = function(event) {
-					var readyState = self.readyState; 
-					
-					self.readyState = 3;
-					self.trigger(event);
-					
-					if (self.options.reconnect === true && readyState !== 0) {
-						new Stream(self.url, self.options);
-					}
-				};
+				});
 				
 				// Works even in IE6
 				function getAbsoluteURL(url) {
