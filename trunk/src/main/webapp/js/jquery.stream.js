@@ -154,11 +154,11 @@
 				
 				// WebSocket event handlers
 				$.extend(this.ws, {
-					onopen: function() {
+					onopen: function(event) {
 						self.readyState = 1;
 						self.trigger(event);
 					},
-					onmessage: function() {
+					onmessage: function(event) {
 						if (event.noHandle) {
 							return;
 						}
@@ -181,11 +181,11 @@
 						
 						self.trigger(e);
 					},
-					onerror: function() {
+					onerror: function(event) {
 						self.options.reconnect = false;
 						self.trigger(event);
 					},
-					onclose: function() {
+					onclose: function(event) {
 						var readyState = self.readyState; 
 						
 						self.readyState = 3;
