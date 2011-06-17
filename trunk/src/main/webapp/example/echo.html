@@ -3,11 +3,11 @@
 	<head>
 		<title>Echo</title>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-		<script type="text/javascript" src="./js/jquery-1.4.1.js"></script>
-		<script type="text/javascript" src="./js/jquery.stream.js"></script>
+		<script type="text/javascript" src="../jquery-1.4.1.js"></script>
+		<script type="text/javascript" src="../jquery.stream.js"></script>
 		<script type="text/javascript">
 		$(function() {
-			$.stream("./echo", {
+			$.stream("/jquery-stream/echo", {
 				open: function() {
 					$("#textfield").removeAttr("disabled").focus();
 				},

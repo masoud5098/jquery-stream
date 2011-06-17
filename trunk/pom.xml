@@ -64,12 +64,12 @@
 						<phase>package</phase>
 						<configuration>
 							<target>
-								<property name="target.path" value="target/js" />
+								<property name="target.path" value="target/javascript" />
 								
 								<delete dir="${target.path}"/>
 								<mkdir dir="${target.path}"/>
 								
-								<copy file="src/main/webapp/js/jquery.stream.js" todir="${target.path}" />
+								<copy file="src/main/webapp/jquery.stream.js" todir="${target.path}" />
 								
  								<taskdef name="jscomp" classname="com.google.javascript.jscomp.ant.CompileTask" classpath="${ant.refid:maven.runtime.classpath}" />
 								<jscomp compilationLevel="simple" output="${target.path}/jquery.stream.min.js">
@@ -79,11 +79,11 @@
 								</jscomp>
 									
 								<replaceregexp match="@VERSION" replace="${project.version}" flags="g" byline="true" >
-									<fileset dir="${target.path}" includes="*.js" />
+									<fileset dir="${target.path}" includes="*" />
 								</replaceregexp>
 								
 								<move todir="${target.path}">
-									<fileset dir="${target.path}" includes="*.js" />
+									<fileset dir="${target.path}" includes="*" />
 									<globmapper from="jquery.stream*" to="jquery.stream-${project.version}*" />
 								</move>
 							</target>
