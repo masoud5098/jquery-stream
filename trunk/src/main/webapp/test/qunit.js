@@ -3,9 +3,11 @@
  *
  * http://docs.jquery.com/QUnit
  *
- * Copyright (c) 2011 John Resig, J철rn Zaefferer
+ * Copyright (c) 2011 John Resig, Jörn Zaefferer
  * Dual licensed under the MIT (MIT-LICENSE.txt)
  * or GPL (GPL-LICENSE.txt) licenses.
+ * Pulled Live from Git Fri Jun 17 13:00:01 UTC 2011
+ * Last Commit: d4f23f8a882d13b71768503e2db9fa33ef169ba0
  */
 
 (function(window) {
@@ -779,7 +781,7 @@ function done() {
 	}
 
 	if ( typeof document !== "undefined" && document.title ) {
-		// show ??for good, ??for bad suite result in title
+		// show ✖ for good, ✔ for bad suite result in title
 		// use escape sequences in case file gets loaded with non-utf-8-charset
 		document.title = (config.stats.bad ? "\u2716" : "\u2714") + " " + document.title;
 	}
@@ -954,7 +956,7 @@ function id(name) {
 // Test for equality any JavaScript type.
 // Discussions and reference: http://philrathe.com/articles/equiv
 // Test suites: http://philrathe.com/tests/equiv
-// Author: Philippe Rath챕 <prathe@gmail.com>
+// Author: Philippe Rathé <prathe@gmail.com>
 QUnit.equiv = function () {
 
     var innerEquiv; // the real equiv function
