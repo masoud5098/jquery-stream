@@ -20,17 +20,17 @@
 	
 	<servlet-mapping>
 		<servlet-name>Chat</servlet-name>
-		<url-pattern>/chat</url-pattern>
+		<url-pattern>/example/chat</url-pattern>
 	</servlet-mapping>
 	
 	<servlet-mapping>
 		<servlet-name>HttpChat</servlet-name>
-		<url-pattern>/httpchat</url-pattern>
+		<url-pattern>/example/httpchat</url-pattern>
 	</servlet-mapping>
 
 	<servlet-mapping>
 		<servlet-name>Echo</servlet-name>
-		<url-pattern>/echo</url-pattern>
+		<url-pattern>/example/echo</url-pattern>
 	</servlet-mapping>
 
 </web-app>

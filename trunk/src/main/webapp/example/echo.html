@@ -7,7 +7,7 @@
 		<script type="text/javascript" src="../jquery.stream.js"></script>
 		<script type="text/javascript">
 		$(function() {
-			$.stream("/jquery-stream/echo", {
+			$.stream("echo", {
 				open: function() {
 					$("#textfield").removeAttr("disabled").focus();
 				},
