@@ -44,12 +44,10 @@
 		
 		$.extend(this, Stream[this.options.type]);
 		
-		var self = this;
 		if (this.options.type === "ws" || !throbber) {
-			setTimeout(function() {
-				self.open();
-			}, 0);
+			this.open();
 		} else {
+			var self = this;
 			switch (this.options.throbber.type || this.options.throbber) {
 			case "lazy":
 				$(window).load(function() {
