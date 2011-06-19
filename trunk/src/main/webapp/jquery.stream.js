@@ -100,6 +100,8 @@
 			type: window.WebSocket ? "ws" : "http",
 			// Whether to automatically reconnect when stream closed
 			reconnect: true,
+			// Whether to trigger global stream event handlers
+			global: true,
 			// Only for WebKit
 			throbber: "lazy",
 			// Message data type
@@ -128,8 +130,10 @@
 				fn.apply(this.options.context, applyArgs);
 			}
 
-			// Triggers global event handlers
-			$.event.trigger("stream" + event.type.substring(0, 1).toUpperCase() + event.type.substring(1), applyArgs);
+			if (this.options.global === true) {
+				// Triggers global event handlers
+				$.event.trigger("stream" + event.type.substring(0, 1).toUpperCase() + event.type.substring(1), applyArgs);
+			}
 		}
 		
 	});
@@ -284,6 +288,9 @@
 					
 					this.readyState = 1;
 					this.trigger("open");
+					
+					// In case of reconnection, continues to communicate
+					this.send();
 				}
 				
 				// Parses messages
@@ -523,14 +530,7 @@
 		}
 		
 	})[window.XDomainRequest ? "xdr" : window.ActiveXObject ? "iframe" : window.XMLHttpRequest ? "xhr" : null]);
-	
-	// In case of reconnection, continues to communicate
-	$(document).bind("streamOpen", function(e, event, stream) {
-		if (!stream.ws) {
-			stream.send();
-		}
-	});
-	
+		
 	// Closes all stream when the document is unloaded 
 	// this works right only in IE
 	$(window).unload(function() {
