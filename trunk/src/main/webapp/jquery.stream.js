@@ -573,7 +573,17 @@
 		}
 	};
 	
-	$.stream.version = "@VERSION";
+	$.extend($.stream, {
+		
+		version: "@VERSION",
+		
+		options: Stream.prototype.options,
+		
+		setup: function(options) {
+			return $.extend(true, Stream.prototype.options, options);
+		}
+	
+	});
 	
 	$.each("streamOpen streamMessage streamError streamClose".split(" "), function(i, o) {
 		$.fn[o] = function(f) {
