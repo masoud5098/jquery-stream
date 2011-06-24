@@ -161,27 +161,7 @@
 						self.trigger(event);
 					},
 					onmessage: function(event) {
-						if (event.noHandle) {
-							return;
-						}
-						
-						// Creates a message event to convert data type
-						var e = document.createEvent("MessageEvent");
-						
-						// To avoid handling
-						e.noHandle = true;
-						e.initMessageEvent(event.type, 
-							event.bubbles, 
-							event.cancelable, 
-							self.options.converters[self.options.dataType](event.data), 
-							event.origin, 
-							event.lastEventId, 
-							event.source, 
-							event.ports);
-						this.dispatchEvent(e);
-						delete e.noHandle;
-						
-						self.trigger(e);
+						self.trigger($.extend({}, event, {data: self.options.converters[self.options.dataType](event.data)}));
 					},
 					onerror: function(event) {
 						self.options.reconnect = false;
