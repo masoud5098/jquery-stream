@@ -115,7 +115,9 @@
 				xml: $.parseXML
 			}
 			// WebSocket constructor argument
-			// protocols: null
+			// protocols: null,
+			// URL rewriter for XDomainRequest transport
+			// rewriteURL: null
 		},
 		
 		trigger: function(event, props) {
@@ -438,8 +440,27 @@
 				this.xdr.onload = function() {
 					self.handleClose();
 				};
-				this.xdr.open("GET", prepareURL(this.url));
+				this.xdr.open("GET", prepareURL((this.options.rewriteURL || rewriteURL)(this.url)));
 				this.xdr.send();
+				
+				function rewriteURL(url) {
+					var rewriters = {
+						// Java - http://download.oracle.com/javaee/5/tutorial/doc/bnagm.html
+						JSESSIONID: function(sid) {
+							return url.replace(/;jsessionid=[^\?]*|(\?)|$/, ";jsessionid=" + sid + "$1");
+						}
+					};
+					
+					for (var name in rewriters) {
+						// Finds session id from cookie
+						var matcher = new RegExp("(?:^|;\\s*)" + encodeURIComponent(name) + "=([^;]*)").exec(document.cookie);
+						if (matcher) {
+							return rewriters[name](matcher[1]);
+						}
+					}
+					
+					return url;
+				}
 			},
 			abort: function() {
 				var onload = this.xdr.onload;

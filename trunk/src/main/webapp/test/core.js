@@ -321,4 +321,19 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 		});
 	}
 	
+	if (type === "http") {
+		asyncTest("Rewriting URL for XDomainRequest", function() {
+			$.stream("stream?message=true", {
+				rewriteURL: function(url) {
+					ok(!!window.XDomainRequest);
+					return url + "&dataType=json";
+				},
+				message: function(event) {
+					equal(event.data, window.XDomainRequest ? "{\"data\":\"data\"}" : "data");
+					start();
+				}
+			});
+		});
+	}
+	
 });
