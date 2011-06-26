@@ -18,6 +18,12 @@
 		<async-supported>true</async-supported>
 	</servlet>
 	
+	<servlet>
+		<servlet-name>TestStream</servlet-name>
+		<servlet-class>flowersinthesand.test.StreamServlet</servlet-class>
+		<async-supported>true</async-supported>
+	</servlet>
+	
 	<servlet-mapping>
 		<servlet-name>Chat</servlet-name>
 		<url-pattern>/example/chat</url-pattern>
@@ -31,6 +37,11 @@
 	<servlet-mapping>
 		<servlet-name>Echo</servlet-name>
 		<url-pattern>/example/echo</url-pattern>
+	</servlet-mapping>
+	
+	<servlet-mapping>
+		<servlet-name>TestStream</servlet-name>
+		<url-pattern>/test/stream</url-pattern>
 	</servlet-mapping>
 
 </web-app>
