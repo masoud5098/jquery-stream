@@ -448,6 +448,10 @@
 						// Java - http://download.oracle.com/javaee/5/tutorial/doc/bnagm.html
 						JSESSIONID: function(sid) {
 							return url.replace(/;jsessionid=[^\?]*|(\?)|$/, ";jsessionid=" + sid + "$1");
+						},
+						// PHP - http://www.php.net/manual/en/session.idpassing.php
+						PHPSESSID: function(sid) {
+							return url.replace(/\?PHPSESSID=[^&]*&?|\?|$/, "?PHPSESSID=" + sid + "&").replace(/&$/, "");
 						}
 					};
 					
