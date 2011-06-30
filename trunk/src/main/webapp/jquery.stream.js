@@ -377,14 +377,6 @@
 				this.xhr = new window.XMLHttpRequest();
 				this.xhr.onreadystatechange = function() {
 					switch (this.readyState) {
-					case 2:
-						try {
-							$.noop(this.status);
-						} catch (e) {
-							// Opera throws an exception when accessing status property in LOADED state
-							this.opera = true;
-						}
-						break;
 					// Handles open and message event
 					case 3:
 						if (this.status !== 200) {
@@ -394,7 +386,7 @@
 						self.handleResponse(this.responseText);
 						
 						// For Opera
-						if (this.opera && !this.polling) {
+						if ($.browser.opera && !this.polling) {
 							this.polling = true;
 							
 							iterate(this, function() {
@@ -410,7 +402,9 @@
 						break;
 					// Handles error or close event
 					case 4:
-						self.handleClose(this.status !== 200);
+						// HTTP status 0 could mean that the request is terminated by abort method
+						// but it's not error in Stream object
+						self.handleClose(this.status !== 200 && this.preStatus !== 200);
 						break;
 					}
 				};
@@ -418,6 +412,8 @@
 				this.xhr.send();
 			},
 			abort: function() {
+				// Saves status
+				this.xhr.preStatus = this.xhr.status;
 				this.xhr.abort();
 			}
 		},
