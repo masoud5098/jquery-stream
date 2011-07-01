@@ -113,6 +113,13 @@
 				json: $.parseJSON, 
 				// jQuery.parseXML is in jQuery 1.5
 				xml: $.parseXML
+			},
+			// Additional parameters for GET request
+			openData: {
+				//  Attaches a time stamp to prevent caching
+				_: function() {
+					return new Date().getTime();
+				}
 			}
 			// WebSocket constructor argument
 			// protocols: null,
@@ -152,7 +159,7 @@
 				}
 				
 				var self = this,
-					url = prepareURL(getAbsoluteURL(this.url).replace(/^http/, "ws"));
+					url = prepareURL(getAbsoluteURL(this.url).replace(/^http/, "ws"), this.options.openData);
 				
 				this.ws = this.options.protocols ? new window.WebSocket(url, this.options.protocols) : new window.WebSocket(url);
 				
@@ -408,7 +415,7 @@
 						break;
 					}
 				};
-				this.xhr.open("GET", prepareURL(this.url));
+				this.xhr.open("GET", prepareURL(this.url, this.options.openData));
 				this.xhr.send();
 			},
 			abort: function() {
@@ -436,7 +443,7 @@
 				this.xdr.onload = function() {
 					self.handleClose();
 				};
-				this.xdr.open("GET", prepareURL((this.options.rewriteURL || rewriteURL)(this.url)));
+				this.xdr.open("GET", prepareURL((this.options.rewriteURL || rewriteURL)(this.url), this.options.openData));
 				this.xdr.send();
 				
 				function rewriteURL(url) {
@@ -477,7 +484,7 @@
 				this.doc.close();
 				
 				var iframe = this.doc.createElement("iframe");
-				iframe.src = prepareURL(this.url);
+				iframe.src = prepareURL(this.url, this.options.openData);
 				
 				this.doc.body.appendChild(iframe);
 				
@@ -552,12 +559,13 @@
 		})();
 	}
 
-	function prepareURL(url) {
-		var rts = /([?&]_=)[^&]*/;
+	function prepareURL(url, data) {
+		var params = {};
+		for (var i in data) {
+			params[i] = $.isFunction(data[i]) ? data[i].call(window) : data[i];
+		}
 		
-		// Attaches a time stamp
-		return (rts.test(url) ? url : (url + (/\?/.test(url) ? "&" : "?") + "_="))
-		.replace(rts, "$1" + new Date().getTime());
+		return url + (/\?/.test(url) ? "&" : "?") + $.param(params);
 	}
 	
 	$.stream = function(url, options) {

@@ -306,6 +306,22 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 			}
 		});
 	});
+
+	asyncTest("openData",  function() {
+		$.stream("stream", {
+			openData: {
+				message: true,
+				dataType: function() {
+					return "json";
+				}
+			},
+			dataType: "json",
+			message: function(event) {
+				equal(event.data.data, "data");
+				start();
+			}
+		});
+	});
 	
 	if (type === "ws") {
 		asyncTest("Subprotocol", function() {
