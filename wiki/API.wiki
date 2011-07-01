@@ -68,9 +68,7 @@ Creates a Stream connection (a long-held HTTP request or a !WebSocket connection
 
  <b>type</b> <font size="1">(added in 1.1)</font> - The type of stream. The default is {{{ws}}} when !WebSocket is available, {{{http}}} otherwise. If a scheme is specified in the url, the normalized scheme will be type value, ignoring a user-defined value.
 
-*The !WebSocket API where Stream Object bases*
-
-[http://www.w3.org/TR/2011/WD-websockets-20110419/ W3C Working Draft 19 April 2011]
+<h3>Error and close event</h3>
 
 Currently, the role of {{{error}}} event is ambiguous according to latest [http://dev.w3.org/html5/websockets/ W3C editor's draft] and [http://www.w3.org/TR/websockets/ W3C working draft] of The !WebSocket API specification. For the moment, I recommend {{{error}}} event handler set to the same handler of {{{close}}} event because they mean that whatever the reason the stream is closed.
 
@@ -272,6 +270,10 @@ it doesn't rely on any specific server-side technology and third-party plugin-in
 As the Stream constructor is not exposed, use {{{jQuery.stream}}} instead.
 
 Stream supports !WebSocket by simply wrapping its instance and HTTP Streaming by choosing proper transport according to browser and using it to communicate. The paragraphs below describe the streaming over HTTP in more detail.
+
+<h3>The !WebSocket API where Stream Object bases</h3>
+
+[http://www.w3.org/TR/2011/WD-websockets-20110419/ W3C Working Draft 19 April 2011]
 
 <h3>Open</h3>
 
