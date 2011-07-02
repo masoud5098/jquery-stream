@@ -2,25 +2,7 @@
 	var originalOptions = $.extend(true, {}, $.stream.options);
 
 	this.teardown = function() {
-		var stream = $.stream();
-		if (stream) {
-			var Stream = stream.constructor;
-			for (var url in Stream.instances) {
-				stream = Stream.instances[url];
-				stream.options.global = false;
-				
-				if (stream.readyState) {
-					stream.close();
-				} else {
-					stream.options.open.push(function() {
-						stream.close();
-					});
-				}
-				
-				delete Stream.instances[url];
-			}
-		}
-		
+		$(window).trigger("unload.stream");
 		$.stream.setup(originalOptions);
 	};
 })();
@@ -55,19 +37,27 @@ asyncTest("Setting defaut options", function() {
 });
 
 asyncTest("Global stream event handlers", 6, function() {
+	var url = "stream?message=true&close=true";
+	
 	$("#undertow")
 	.streamOpen(function(e, event, stream) {
-		ok(true);
+		if (stream.url === url) {
+			ok(true);
+		}
 	})
 	.streamMessage(function(e, event, stream) {
-		equal(event.data, "data");
+		if (stream.url === url) {
+			equal(event.data, "data");
+		}
 	})
 	.streamClose(function(e, event, stream) {
-		ok(true);
-		start();
+		if (stream.url === url) {
+			ok(true);
+			start();
+		}
 	});
 	
-	$.stream("stream?message=true&close=true", {
+	$.stream(url, {
 		reconnect: false,
 		open: function() {
 			ok(true);
@@ -82,18 +72,26 @@ asyncTest("Global stream event handlers", 6, function() {
 });
 
 asyncTest("Only local stream event handlers", 3, function() {
+	var url = "stream?message=true&close=true";
+	
 	$("#undertow")
 	.streamOpen(function(e, event, stream) {
-		ok(false);
+		if (stream.url === url) {
+			ok(false);
+		}
 	})
 	.streamMessage(function(e, event, stream) {
-		ok(false);
+		if (stream.url === url) {
+			ok(false);
+		}
 	})
 	.streamClose(function(e, event, stream) {
-		ok(false);
+		if (stream.url === url) {
+			ok(false);
+		}
 	});
 	
-	$.stream("stream?message=true&close=true", {
+	$.stream(url, {
 		reconnect: false,
 		global: false,
 		open: function() {
@@ -338,6 +336,17 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 	}
 	
 	if (type === "http") {
+		asyncTest("XDomainRequest", function() {
+			$.stream.setup({enableXDR: true});
+			
+			$.stream("stream", {
+				open: function(event, stream) {
+					ok(window.XDomainRequest ? !!stream.xdr : !stream.xdr);
+					start();
+				}
+			});
+		});
+			
 		asyncTest("Rewriting URL for XDomainRequest", function() {
 			$.stream("stream?message=true", {
 				rewriteURL: function(url) {

@@ -10,14 +10,18 @@
  * Compatible with jQuery 1.4+
  */
 (function($, undefined) {
+
+	// Stream object instances
+	var instances = {},
 	
-	// Does the throbber of doom exist?
-	var throbber = $.browser.webkit && !$.isReady;
-	if (throbber) {
-		$(window).load(function() {
-			throbber = false;
-		});
-	}
+		// Streaming agents
+		agents = {},
+	
+		// HTTP Streaming transports
+		transports = {},
+		
+		// Does the throbber of doom exist?
+		throbber = $.browser.webkit && !$.isReady;
 	
 	// Stream is based on The WebSocket API 
 	// W3C Working Draft 19 April 2011 - http://www.w3.org/TR/2011/WD-websockets-20110419/
@@ -33,17 +37,19 @@
 		}
 		
 		// The url and alias are a identifier of this instance within the document
-		Stream.instances[this.url] = this;
+		instances[this.url] = this;
 		if (this.options.alias) {
-			Stream.instances[this.options.alias] = this;
+			instances[this.options.alias] = this;
 		}
 		
 		// Stream type
 		var match = /^(http|ws)s?:/.exec(this.url);
 		this.options.type = (match && match[1]) || this.options.type;
 		
-		$.extend(this, Stream[this.options.type]);
+		// According to stream type, extends an agent
+		$.extend(true, this, agents[this.options.type]);
 		
+		// Open
 		if (this.options.type === "ws" || !throbber) {
 			this.open();
 		} else {
@@ -87,7 +93,7 @@
 			}
 		}
 	}
-	
+		
 	$.extend(Stream.prototype, {
 		
 		// The state of stream
@@ -123,7 +129,8 @@
 			}
 			// WebSocket constructor argument
 			// protocols: null,
-			// URL rewriter for XDomainRequest transport
+			// XDomainRequest transport
+			// enableXDR: false,
 			// rewriteURL: null
 		},
 		
@@ -132,24 +139,30 @@
 				event : 
 				$.extend($.Event(event), {bubbles: false, cancelable: false}, props);
 			
-			var applyArgs = [event, this];
+			var handlers = this.options[event.type],
+				applyArgs = [event, this];
 			
 			// Triggers local event handlers
-			for (var fn, i = 0; fn = this.options[event.type][i]; i++) {
-				fn.apply(this.options.context, applyArgs);
+			for (var i = 0; i < handlers.length; i++) {
+				handlers[i].apply(this.options.context, applyArgs);
 			}
 
-			if (this.options.global === true) {
+			if (this.options.global) {
 				// Triggers global event handlers
 				$.event.trigger("stream" + event.type.substring(0, 1).toUpperCase() + event.type.substring(1), applyArgs);
 			}
 		}
 		
 	});
-		
-	$.extend(Stream, {
-		
-		instances: {},
+	
+	// Once the window is fully loaded, the throbber of doom will not be appearing
+	if (throbber) {
+		$(window).load(function() {
+			throbber = false;
+		});
+	}
+	
+	$.extend(agents, {
 		
 		// WebSocket
 		ws: {
@@ -183,7 +196,7 @@
 						self.trigger(event);
 
 						// Reconnect?
-						if (self.options.reconnect === true && readyState !== 0) {
+						if (self.options.reconnect && readyState !== 0) {
 							new Stream(self.url, self.options);
 						}
 					}
@@ -215,6 +228,15 @@
 		
 		// HTTP Streaming
 		http: {
+			open: function() {
+				// Chooses a proper transport
+				var transport = this.options.enableXDR && window.XDomainRequest ? "xdr" : window.ActiveXObject ? "iframe" : window.XMLHttpRequest ? "xhr" : null;
+				if (!transport) {
+					return;
+				}
+				
+				$.extend(true, this, transports[transport]).connect();
+			},
 			send: function(data) {
 				if (this.readyState === 0) {
 					$.error("INVALID_STATE_ERR: Stream not open");
@@ -235,7 +257,7 @@
 								url: this.url,
 								context: this,
 								type: "POST",
-								data: this.dataQueue.shift() + this.paramMetadata("send"),
+								data: this.dataQueue.shift() + paramMetadata("send", {id: this.id}),
 								complete: post
 							});
 						} else {
@@ -250,23 +272,12 @@
 					this.readyState = 2;
 
 					// Notifies the server
-					$.post(this.url, this.paramMetadata("close"));
+					$.post(this.url, paramMetadata("close", {id: this.id}));
 					
 					// Prevents reconnecting
 					this.options.reconnect = false;
-					this.abort();
+					this.disconnect();
 				}
-			},
-			paramMetadata: function(type, props) {
-				// Always includes stream id and communication type
-				props = $.extend({}, props, {id: this.id, type: type});
-				
-				var answer = {};
-				for (var key in props) {
-					answer["metadata." + key] = props[key];
-				}
-				
-				return $.param(answer);
 			},
 			handleResponse: function(text) {
 				if (this.readyState === 0) {
@@ -284,7 +295,7 @@
 				
 				// Parses messages
 				// message format = message-size ; message-data ;
-				for(;;) {
+				for (;;) {
 					if (this.message.size == null) {
 						// Checks a semicolon of size part
 						var sizeEnd = text.indexOf(";", this.message.index);
@@ -335,7 +346,7 @@
 				var readyState = this.readyState;
 				this.readyState = 3;
 				
-				if (isError === true) {
+				if (isError) {
 					// Prevents reconnecting
 					this.options.reconnect = false;
 					
@@ -364,7 +375,7 @@
 					});
 					
 					// Reconnect?
-					if (this.options.reconnect === true) {
+					if (this.options.reconnect) {
 						new Stream(this.url, this.options);
 					}
 				}
@@ -373,12 +384,11 @@
 	
 	});
 	
-	// Completes prototype for HTTP Streaming
-	$.extend(Stream.http, ({
+	$.extend(transports, {
 		
-		// XMLHttpRequest: Modern browsers except IE
+		// XMLHttpRequest: Modern browsers except Internet Explorer
 		xhr: {
-			open: function() {
+			connect: function() {
 				var self = this;
 				
 				this.xhr = new window.XMLHttpRequest();
@@ -418,7 +428,7 @@
 				this.xhr.open("GET", prepareURL(this.url, this.options.openData));
 				this.xhr.send();
 			},
-			abort: function() {
+			disconnect: function() {
 				// Saves status
 				try {
 					this.xhr.preStatus = this.xhr.status;
@@ -427,60 +437,9 @@
 			}
 		},
 		
-		// XDomainRequest: IE9, IE8
-		xdr: {
-			open: function() {
-				var self = this;
-				
-				this.xdr = new window.XDomainRequest();
-				// Handles open and message event
-				this.xdr.onprogress = function() {
-					self.handleResponse(this.responseText);
-				};
-				// Handles error event
-				this.xdr.onerror = function() {
-					self.handleClose(true);
-				};
-				// Handles close event
-				this.xdr.onload = function() {
-					self.handleClose();
-				};
-				this.xdr.open("GET", prepareURL((this.options.rewriteURL || rewriteURL)(this.url), this.options.openData));
-				this.xdr.send();
-				
-				function rewriteURL(url) {
-					var rewriters = {
-						// Java - http://download.oracle.com/javaee/5/tutorial/doc/bnagm.html
-						JSESSIONID: function(sid) {
-							return url.replace(/;jsessionid=[^\?]*|(\?)|$/, ";jsessionid=" + sid + "$1");
-						},
-						// PHP - http://www.php.net/manual/en/session.idpassing.php
-						PHPSESSID: function(sid) {
-							return url.replace(/\?PHPSESSID=[^&]*&?|\?|$/, "?PHPSESSID=" + sid + "&").replace(/&$/, "");
-						}
-					};
-					
-					for (var name in rewriters) {
-						// Finds session id from cookie
-						var matcher = new RegExp("(?:^|;\\s*)" + encodeURIComponent(name) + "=([^;]*)").exec(document.cookie);
-						if (matcher) {
-							return rewriters[name](matcher[1]);
-						}
-					}
-					
-					return url;
-				}
-			},
-			abort: function() {
-				var onload = this.xdr.onload;
-				this.xdr.abort();
-				onload();
-			}
-		},
-		
-		// Hidden iframe: IE7, IE6
+		// Hidden iframe: Internet Explorer
 		iframe: {
-			open: function() {
+			connect: function() {
 				this.doc = new window.ActiveXObject("htmlfile");
 				this.doc.open();
 				this.doc.close();
@@ -534,18 +493,70 @@
 					return false;
 				});
 			},
-			abort: function() {
+			disconnect: function() {
 				this.doc.execCommand("Stop");
+			}
+		},
+		
+		// XDomainRequest: Optionally IE9, IE8
+		xdr: {
+			connect: function() {
+				var self = this;
+				
+				this.xdr = new window.XDomainRequest();
+				// Handles open and message event
+				this.xdr.onprogress = function() {
+					self.handleResponse(this.responseText);
+				};
+				// Handles error event
+				this.xdr.onerror = function() {
+					self.handleClose(true);
+				};
+				// Handles close event
+				this.xdr.onload = function() {
+					self.handleClose();
+				};
+				this.xdr.open("GET", prepareURL((this.options.rewriteURL || rewriteURL)(this.url), this.options.openData));
+				this.xdr.send();
+				
+				function rewriteURL(url) {
+					var rewriters = {
+						// Java - http://download.oracle.com/javaee/5/tutorial/doc/bnagm.html
+						JSESSIONID: function(sid) {
+							return url.replace(/;jsessionid=[^\?]*|(\?)|$/, ";jsessionid=" + sid + "$1");
+						},
+						// PHP - http://www.php.net/manual/en/session.idpassing.php
+						PHPSESSID: function(sid) {
+							return url.replace(/\?PHPSESSID=[^&]*&?|\?|$/, "?PHPSESSID=" + sid + "&").replace(/&$/, "");
+						}
+					};
+					
+					for (var name in rewriters) {
+						// Finds session id from cookie
+						var matcher = new RegExp("(?:^|;\\s*)" + encodeURIComponent(name) + "=([^;]*)").exec(document.cookie);
+						if (matcher) {
+							return rewriters[name](matcher[1]);
+						}
+					}
+					
+					return url;
+				}
+			},
+			disconnect: function() {
+				var onload = this.xdr.onload;
+				this.xdr.abort();
+				onload();
 			}
 		}
 		
-	})[window.XDomainRequest ? "xdr" : window.ActiveXObject ? "iframe" : window.XMLHttpRequest ? "xhr" : null]);
+	});
 		
 	// Closes all stream when the document is unloaded 
 	// this works right only in IE
-	$(window).unload(function() {
-		$.each(Stream.instances, function() {
+	$(window).bind("unload.stream", function() {
+		$.each(instances, function(url) {
 			this.close();
+			delete instances[url];
 		});
 	});
 	
@@ -569,18 +580,29 @@
 		
 		return url + (/\?/.test(url) ? "&" : "?") + $.param(params);
 	}
+
+	function paramMetadata(type, props) {
+		props = $.extend({}, props, {type: type});
+		
+		var answer = {};
+		for (var key in props) {
+			answer["metadata." + key] = props[key];
+		}
+		
+		return $.param(answer);
+	}
 	
 	$.stream = function(url, options) {
 		switch (arguments.length) {
 		case 0:
-			for (var i in Stream.instances) {
-				return Stream.instances[i];
+			for (var i in instances) {
+				return instances[i];
 			}
 			return null;
 		case 1:
-			return Stream.instances[url] || null;
+			return instances[url] || null;
 		default:
-			return Stream.instances[url] && Stream.instances[url].readyState !== 3 ? Stream.instances[url] : new Stream(url, options);
+			return instances[url] && instances[url].readyState !== 3 ? instances[url] : new Stream(url, options);
 		}
 	};
 	
