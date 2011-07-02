@@ -10,13 +10,21 @@ The mapping between the jQuery version and the jQuery Stream version is:
 || *jQuery Stream version* || *jQuery version* ||
 || 1.x || 1.4||
 
-*Version 1.1*
+<h3>[http://code.google.com/p/jquery-stream/issues/list?can=1&q=label%3ATarget-1.1.1 Version 1.1.1]</h3>
+
+Hidden Iframe transport replaces XDomainRequest transport to maintain user's session.
+ * jQuery.stream.setup
+ * global option
+ * openData option
+ * enableXDR and rewriteURL option
+
+<h3>[http://code.google.com/p/jquery-stream/issues/list?can=1&q=label%3ATarget-1.1 Version 1.1]</h3>
 
 When migrating from 1.0, you must add the {{{type}}} option having {{{http}}} as a value to stream options.
  * !WebSocket support
  * alias option
 
-*Version 1.0*
+<h3>Version 1.0</h3>
  * HTTP Streaming support
 
 ===jQuery.stream()===
@@ -48,15 +56,23 @@ Creates a Stream connection (a long-held HTTP request or a !WebSocket connection
 
  <b>dataType</b> - The type of data that a server push to a client. The handled data is passed as the {{{data}}} attribute of message event. The supported types are {{{text}}}, {{{json}}} and {{{xml}}}. the default is {{{text}}} itself.
 
+ <b>enableXDR</b> - TODO
+
  <b>error</b> - A function or an array of functions to be called if an error is detected. Each function receives a simple event named {{{error}}} which is based on {{{jQuery.Event}}} and the stream instance as the arguments.
+
+ <b>global</b> - TODO
 
  <b>message</b> - A function or an array of functions to be called if the stream receives a data. Each function receives a event named {{{message}}} which is based on {{{jQuery.Event}}} and {{{MessageEvent}}} interface and the stream instance as the arguments. The event has the data attribute which is sent by the server and is converted according to {{{dataType}}}.
 
  <b>open</b> - A function or an array of functions to be called if the stream opens. Each function receives a simple event named {{{open}}} which is based on {{{jQuery.Event}}} and the stream instance as the arguments.
 
+ <b>openData</b> - TODO
+
  <b>protocols</b> <font size="1">(added in 1.1)</font> - An argument to be used to create !WebSocket instance.
 
  <b>reconnect</b> - Whether to automatically reconnect when connection closed. This is set to {{{true}}} by default for continuous stream.
+
+ <b>rewriteURL</b> - TODO
 
  <b>throbber</b> - Only for Webkit-based browsers such as Chrome and Safari. This option is to remove 'Throbber of doom' which is spinning loading indicator to show the user that a request is performing. The throbber doesn't be removed only when a Stream is created before all the requests such as image, script, iframe and ajax have finished loading, because a streaming connection is HTTP persistent connection. The following strategies are available:
   lazy - After the window's load event fires and some {{{delay}}}, it opens a Stream connection. The default setting for lazy is {{{{type: "lazy", delay: 50}}}} or simply {{{"lazy"}}}. It is suitable for typical use, unless the page contains many resources so the time taken for loading is very long. This is default.<br/>
@@ -71,6 +87,10 @@ Creates a Stream connection (a long-held HTTP request or a !WebSocket connection
 <h3>Error and close event</h3>
 
 Currently, the role of {{{error}}} event is ambiguous according to latest [http://dev.w3.org/html5/websockets/ W3C editor's draft] and [http://www.w3.org/TR/websockets/ W3C working draft] of The !WebSocket API specification. For the moment, I recommend {{{error}}} event handler set to the same handler of {{{close}}} event because they mean that whatever the reason the stream is closed.
+
+<h3>Enabling XDomainRequest</h3>
+
+TODO
 
 *Example:* Stream wrapping a !WebSocket instance. If browser doesn't implement !WebSocket, nothing happens.
 {{{
@@ -201,6 +221,11 @@ $("#close").click(function() {
 {{{String jQuery.stream.version}}}
 
 Contains the version number of jQuery Stream.
+
+===jQuery.stream.setup===
+{{{Object jQuery.stream.setup(options)}}}
+
+TODO
  
 == jQuery.fn ==
 Global Stream event handlers.
