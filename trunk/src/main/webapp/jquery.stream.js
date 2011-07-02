@@ -420,7 +420,9 @@
 			},
 			abort: function() {
 				// Saves status
-				this.xhr.preStatus = this.xhr.status;
+				try {
+					this.xhr.preStatus = this.xhr.status;
+				} catch (e) {}
 				this.xhr.abort();
 			}
 		},
