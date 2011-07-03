@@ -573,12 +573,7 @@
 	}
 
 	function prepareURL(url, data) {
-		var params = {};
-		for (var i in data) {
-			params[i] = $.isFunction(data[i]) ? data[i].call(window) : data[i];
-		}
-		
-		return url + (/\?/.test(url) ? "&" : "?") + $.param(params);
+		return url + (/\?/.test(url) ? "&" : "?") + $.param(data);
 	}
 
 	function paramMetadata(type, props) {
