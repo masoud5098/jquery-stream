@@ -13,7 +13,7 @@ The mapping between the jQuery version and the jQuery Stream version is:
 <h3>[http://code.google.com/p/jquery-stream/issues/list?can=1&q=label%3ATarget-1.1.1 Version 1.1.1]</h3>
 
 Hidden Iframe transport replaces XDomainRequest transport to maintain user's session.
- * jQuery.stream.setup
+ * jQuery.stream.setup()
  * global option
  * openData option
  * enableXDR and rewriteURL option
@@ -251,7 +251,7 @@ $.stream("/stream", {
 
 Contains the version number of jQuery Stream.
 
-===jQuery.stream.setup===
+===jQuery.stream.setup(options)===
 {{{Object jQuery.stream.setup(options)}}}
 
 Sets default options.
