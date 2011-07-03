@@ -1,4 +1,4 @@
-#summary jQuery Stream 1.1 API Reference
+#summary jQuery Stream 1.1.1 API Reference
 #labels Featured
 =API Reference=
 <wiki:toc max_depth="3" />
@@ -54,25 +54,25 @@ Creates a Stream connection (a long-held HTTP request or a !WebSocket connection
 
  <b>converters</b> - A map of data-type/data-converter pairs. data-converter takes one argument which is a raw data and returns a transformed data. The default is {{{{text: window.String, json: $.parseJSON, xml: $.parseXML}}}}, {{{jQuery.parseJSON}}} is in 1.4.1 and {{{jQuery.parseXML}}} is in 1.5.
 
- <b>dataType</b> - The type of data that a server push to a client. The handled data is passed as the {{{data}}} attribute of message event. The supported types are {{{text}}}, {{{json}}} and {{{xml}}}. the default is {{{text}}} itself.
+ <b>dataType</b> - The type of data that a server push to a client. The handled data is passed as the {{{data}}} attribute of message event. The supported types are {{{text}}}, {{{json}}} and {{{xml}}}. The default is {{{text}}} itself.
 
- <b>enableXDR</b> - TODO
+ <b>enableXDR</b> <font size="1">(added in 1.1.1)</font> - If set to {{{true}}}, XDomainRequest will be used as a transport when available.
 
  <b>error</b> - A function or an array of functions to be called if an error is detected. Each function receives a simple event named {{{error}}} which is based on {{{jQuery.Event}}} and the stream instance as the arguments.
 
- <b>global</b> - TODO
+ <b>global</b> <font size="1">(added in 1.1.1)</font> - Whether to trigger global Stream event handlers for this stream. The default is {{{true}}}.
 
  <b>message</b> - A function or an array of functions to be called if the stream receives a data. Each function receives a event named {{{message}}} which is based on {{{jQuery.Event}}} and {{{MessageEvent}}} interface and the stream instance as the arguments. The event has the data attribute which is sent by the server and is converted according to {{{dataType}}}.
 
  <b>open</b> - A function or an array of functions to be called if the stream opens. Each function receives a simple event named {{{open}}} which is based on {{{jQuery.Event}}} and the stream instance as the arguments.
 
- <b>openData</b> - TODO
+ <b>openData</b> <font size="1">(added in 1.1.1)</font> - Additional parameters for open request. It is serialized to a query string and appended to the url.
 
  <b>protocols</b> <font size="1">(added in 1.1)</font> - An argument to be used to create !WebSocket instance.
 
  <b>reconnect</b> - Whether to automatically reconnect when connection closed. This is set to {{{true}}} by default for continuous stream.
 
- <b>rewriteURL</b> - TODO
+ <b>rewriteURL</b> <font size="1">(added in 1.1.1)</font> - A function that can be used to modify url to contain a current user's session identifier when XDomainRequest is used as a transport. This is only effective when {{{enableXDR}}} options is true and XDomainRequest is available. It receives the original url and must return the modified url. The default function supports Java and PHP. For example, If a url is {{{echo?foo=bar}}} and JSESSIONID cookie exists, the url becomes {{{echo;jsessionid=${JSESSIONID}?foo=bar}}}, and if PHPSESSID cookie exists, the url becomes {{{echo?PHPSESSID=${PHPSESSID}&foo=bar}}}.
 
  <b>throbber</b> - Only for Webkit-based browsers such as Chrome and Safari. This option is to remove 'Throbber of doom' which is spinning loading indicator to show the user that a request is performing. The throbber doesn't be removed only when a Stream is created before all the requests such as image, script, iframe and ajax have finished loading, because a streaming connection is HTTP persistent connection. The following strategies are available:
   lazy - After the window's load event fires and some {{{delay}}}, it opens a Stream connection. The default setting for lazy is {{{{type: "lazy", delay: 50}}}} or simply {{{"lazy"}}}. It is suitable for typical use, unless the page contains many resources so the time taken for loading is very long. This is default.<br/>
@@ -87,10 +87,6 @@ Creates a Stream connection (a long-held HTTP request or a !WebSocket connection
 <h3>Error and close event</h3>
 
 Currently, the role of {{{error}}} event is ambiguous according to latest [http://dev.w3.org/html5/websockets/ W3C editor's draft] and [http://www.w3.org/TR/websockets/ W3C working draft] of The !WebSocket API specification. For the moment, I recommend {{{error}}} event handler set to the same handler of {{{close}}} event because they mean that whatever the reason the stream is closed.
-
-<h3>Enabling XDomainRequest</h3>
-
-TODO
 
 *Example:* Stream wrapping a !WebSocket instance. If browser doesn't implement !WebSocket, nothing happens.
 {{{
@@ -120,6 +116,29 @@ $.stream("/stream", {});
 $.stream(window.WebSocket ? "/stream-websocket" : "/stream-http", {
     alias: "stream",
     protocols: "chat"
+});
+}}}
+
+*Example:* Retrieving a stream.
+{{{
+$.stream("http://example.com/event-stream", {alias: "event", dataType: "json"});
+
+// If that stream is the first stream in the document
+$("#message-text").keyup(function(event) {
+    if (event.which === 13) {
+        $.stream().send({message: this.value});
+    }
+});
+
+// Using url
+$("#notice-button").click(function() {
+    $.stream("http://example.com/event-stream").send({ts: new Date().getTime()});
+    return false;
+});
+
+// Using alias
+$("#close").click(function() {
+    $.stream("event").close();
 });
 }}}
 
@@ -194,26 +213,36 @@ $.stream("/chat", {
 });
 }}}
 
-*Example:* Retrieving a stream.
+*Example:* Suppressing global Stream events.
 {{{
-$.stream("http://example.com/event-stream", {alias: "event", dataType: "json"});
-
-// If that stream is the first stream in the document
-$("#message-text").keyup(function(event) {
-    if (event.which === 13) {
-        $.stream().send({message: this.value});
+$.stream("/event", {
+    global: false,
+    message: function(event) {
+        alert(event.data);
     }
 });
+}}}
 
-// Using url
-$("#notice-button").click(function() {
-    $.stream("http://example.com/event-stream").send({ts: new Date().getTime()});
-    return false;
+*Example:* Additional parameters for open request.
+{{{
+$.stream("/stream", {
+    openData: {
+        type: "json",
+        value: function() {
+            return $("#value").val();
+        }
+    }
 });
+}}}
 
-// Using alias
-$("#close").click(function() {
-    $.stream("event").close();
+*Example:* Enabling XDomainRequest transport
+{{{
+$.stream("/stream", {
+    enableXDR: true,
+    rewriteURL: function(url) {
+        var sessionId = "${pageContext.session.id}";
+        return sessionId ? url.replace(/;jsessionid=[^\?]*|(\?)|$/, ";jsessionid=" + sessionId + "$1") : url;
+    }
 });
 }}}
 
@@ -225,7 +254,12 @@ Contains the version number of jQuery Stream.
 ===jQuery.stream.setup===
 {{{Object jQuery.stream.setup(options)}}}
 
-TODO
+Sets default options.
+
+*Example:* Automatically enabling XDomainRequest
+{{{
+$.stream.setup({enableXDR: true});
+}}}
  
 == jQuery.fn ==
 Global Stream event handlers.
@@ -304,11 +338,11 @@ Stream supports !WebSocket by simply wrapping its instance and HTTP Streaming by
 
 When the constructor is called, it sends a GET request which will be a one-way socket receiving a data from a server in real-time. Since the timestamp parameter ({{{_}}}) is always included in the request URL in order to prevent caching, the server doesn't need to configure it. Depending on the browser, the following transports are used to establish a stream connection.
 
-*Hidden Iframe* - For IE6 and IE7. It's different from the traditional way of fetching response. it polls the response text manually using {{{setTimeout}}} instead of requiring the server to print {{{<script>}}} tag. For this reason, the {{{Content-Type}}} of the response header must be set to 'text/plain', not 'text/html'.
+*XMLHttpRequest* - For modern browsers except Internet Explorer. but in the case of Opera, it polls the response text manually using {{{setTimeout}}}.
 
-*XDomainRequest* - For IE8 and IE9. See [http://blogs.msdn.com/b/ieinternals/archive/2010/04/06/comet-streaming-in-internet-explorer-with-xmlhttprequest-and-xdomainrequest.aspx COMET Streaming in Internet Explorer] and [http://msdn.microsoft.com/en-us/library/cc288060%28VS.85%29.aspx XDomainRequest Object (MSDN)]. it requires padding to enable streaming and an {{{Access-Control-Allow-Origin}}} response header.
+*Hidden Iframe* - For Internet Explorer. It's different from the traditional way of fetching response. it polls the response text manually using {{{setTimeout}}} instead of requiring the server to print {{{<script>}}} tag. For this reason, the {{{Content-Type}}} of the response header must be set to 'text/plain', not 'text/html'.
 
-*XMLHttpRequest* - For modern browsers except IE. but in the case of Opera, it polls the response text manually using {{{setTimeout}}}.
+*XDomainRequest* - Optionally available in Internet Explorer 8+. See [http://blogs.msdn.com/b/ieinternals/archive/2010/04/06/comet-streaming-in-internet-explorer-with-xmlhttprequest-and-xdomainrequest.aspx COMET Streaming in Internet Explorer] and [http://msdn.microsoft.com/en-us/library/cc288060%28VS.85%29.aspx XDomainRequest Object (MSDN)]. it requires padding to enable streaming and an {{{Access-Control-Allow-Origin}}} response header. For security reasons, XDomainRequest excludes cookies when sending a request, so in most cases session state is not maintained. Therefore, as of jQuery Stream 1.1.1, Hidden Iframe replaces XDomainRequest. Since the performance of XDomainRequest, of course, is far better than Hidden Iframe, it is recommended to use XDomainRequest if possible. The previous problem can be solved by rewriting url to contain the session id. How to rewrite url is depending on the server-side technology: For details, see [http://stackoverflow.com/questions/6453779/maintaining-session-by-rewriting-url my question] on stackoverflow.
 
 The transport is chosen automatically according to the user's browser, and changing it is not allowed.
 
