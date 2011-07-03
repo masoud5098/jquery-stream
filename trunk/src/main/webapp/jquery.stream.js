@@ -119,14 +119,9 @@
 				json: $.parseJSON, 
 				// jQuery.parseXML is in jQuery 1.5
 				xml: $.parseXML
-			},
-			// Additional parameters for GET request
-			openData: {
-				//  Attaches a time stamp to prevent caching
-				_: function() {
-					return new Date().getTime();
-				}
 			}
+			// Additional parameters for GET request
+			// openData: null,
 			// WebSocket constructor argument
 			// protocols: null,
 			// XDomainRequest transport
@@ -571,9 +566,18 @@
 			}, 0);
 		})();
 	}
-
+	
 	function prepareURL(url, data) {
-		return url + (/\?/.test(url) ? "&" : "?") + $.param(data);
+		var rts = /([?&]_=)[^&]*/;
+
+		// Converts data into a query string
+		if (data && typeof data !== "string") {
+			data = $.param(data);
+		}
+		
+		// Attaches a time stamp to prevent caching
+		return (rts.test(url) ? url : (url + (/\?/.test(url) ? "&" : "?") + "_=")).replace(rts, "$1" + new Date().getTime())
+		+ (data ? ("&" + data) : "");
 	}
 
 	function paramMetadata(type, props) {

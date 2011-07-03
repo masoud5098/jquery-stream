@@ -305,7 +305,18 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 		});
 	});
 
-	asyncTest("openData",  function() {
+	asyncTest("openData - string data",  function() {
+		$.stream("stream", {
+			openData: "message=true&dataType=json",
+			dataType: "json",
+			message: function(event) {
+				equal(event.data.data, "data");
+				start();
+			}
+		});
+	});
+	
+	asyncTest("openData - object data",  function() {
 		$.stream("stream", {
 			openData: {
 				message: true,
