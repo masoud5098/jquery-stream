@@ -52,7 +52,7 @@ The server supporting only HTTP Streaming may receive !WebSocket opening handsha
 
  <b>Content-Type</b> - Set to 'text/plain' that is the only one satisfying all streaming transport.
 
- <b>Access-Control-Allow-Origin</b> - Set to either {{{*}}} or the exact URL of the requesting web page. This header enables response to be shared cross domain, but not cross-domain comet because of obsolete browsers that does not support it. It's just XDomainRequest transport's requirement. For detail information about header, see [http://www.w3.org/TR/access-control/ Cross-Origin Resource Sharing].
+ <b>Access-Control-Allow-Origin</b> - Set to either {{{*}}} or the exact URL of the requesting web page. This header enables response to be shared cross domain, but not cross-domain comet because of obsolete browsers that does not support it. It's just XDomainRequest transport's requirement. For detail information about header, see [http://www.w3.org/TR/access-control/ Cross-Origin Resource Sharing]. As of jQuery Stream 1.1.1, XDomainRequest transport becomes optional and thus you don't have to set this header unless setting {{{enableXDR}}} to true.
 
 ====Response Format====
 
