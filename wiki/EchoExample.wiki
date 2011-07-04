@@ -23,6 +23,8 @@ Since the web page is plain HTML page and the jQuery Stream is plain JavaScript 
         <script type="text/javascript" src="./js/jquery-1.4.1.js"></script>
         <script type="text/javascript" src="./js/jquery.stream.js"></script>
         <script type="text/javascript">
+        $.stream.setup({enableXDR: true});
+        
         $(function() {
             $.stream("./echo", {
                 open: function() {
