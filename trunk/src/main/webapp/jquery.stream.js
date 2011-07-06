@@ -572,7 +572,7 @@
 
 		// Converts data into a query string
 		if (data && typeof data !== "string") {
-			data = $.param(data);
+			data = $.param(data, $.ajaxSettings.traditional);
 		}
 		
 		// Attaches a time stamp to prevent caching
@@ -588,7 +588,7 @@
 			answer["metadata." + key] = props[key];
 		}
 		
-		return $.param(answer);
+		return $.param(answer, $.ajaxSettings.traditional);
 	}
 	
 	$.stream = function(url, options) {
