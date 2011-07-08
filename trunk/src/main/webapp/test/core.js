@@ -348,9 +348,8 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 	
 	if (type === "http") {
 		asyncTest("XDomainRequest", function() {
-			$.stream.setup({enableXDR: true});
-			
 			$.stream("stream", {
+				enableXDR: true,
 				open: function(event, stream) {
 					ok(window.XDomainRequest ? !!stream.xdr : !stream.xdr);
 					start();
@@ -360,6 +359,7 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 			
 		asyncTest("Rewriting URL for XDomainRequest", function() {
 			$.stream("stream?message=true", {
+				enableXDR: true,
 				rewriteURL: function(url) {
 					ok(!!window.XDomainRequest);
 					return url + "&dataType=json";
