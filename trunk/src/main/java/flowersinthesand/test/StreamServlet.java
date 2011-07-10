@@ -3,6 +3,8 @@ package flowersinthesand.test;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,23 +36,23 @@ public class StreamServlet extends WebSocketServlet {
 	private Map<String, AsyncContext> asyncContexts = new ConcurrentHashMap<String, AsyncContext>();
 
 	@Override
-	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+	protected void doGet(final HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
 		response.setCharacterEncoding("utf-8");
 		response.setContentType("text/plain");
 		response.setHeader("Access-Control-Allow-Origin", "*");
 
-		PrintWriter writer = response.getWriter();
-
+		final boolean differentFormat = Boolean.valueOf(request.getParameter("differentFormat"));
 		final String id = UUID.randomUUID().toString();
+		final PrintWriter writer = response.getWriter();
 		writer.print(id);
-		writer.print(';');
+		writer.print(differentFormat ? "\r\n" : ";");
 
 		for (int i = 0; i < 1024; i++) {
 			writer.print(' ');
 		}
-		writer.print(';');
+		writer.print(differentFormat ? "\r\n" : ";");
 		writer.flush();
 
 		final AsyncContext ac = request.startAsync();
@@ -73,8 +75,27 @@ public class StreamServlet extends WebSocketServlet {
 		});
 		asyncContexts.put(id, ac);
 
+		if (Boolean.valueOf(request.getParameter("delayOpen"))) {
+			new Timer().schedule(new TimerTask() {
+
+				@Override
+				public void run() {
+					writer.print("OPEN");
+					writer.flush();
+				}
+
+			}, 100);
+		}
 		if (Boolean.valueOf(request.getParameter("message"))) {
-			sendMessage(writer, createMessage(request.getParameter("dataType")));
+			new Timer().schedule(new TimerTask() {
+
+				@Override
+				public void run() {
+					sendMessage(writer, createMessage(request.getParameter("dataType")),
+							differentFormat);
+				}
+
+			}, 100);
 		}
 		if (Boolean.valueOf(request.getParameter("close"))) {
 			ac.setTimeout(150);
@@ -100,7 +121,16 @@ public class StreamServlet extends WebSocketServlet {
 	}
 
 	private void sendMessage(PrintWriter writer, String message) {
-		writer.print(message.length() + ";" + message + ";");
+		sendMessage(writer, message, false);
+	}
+
+	private void sendMessage(PrintWriter writer, String message, boolean differentFormat) {
+		if (!differentFormat) {
+			writer.print(message.length() + ";" + message + ";");
+		} else {
+			writer.print(message + "\r\n");
+		}
+
 		writer.flush();
 	}
 

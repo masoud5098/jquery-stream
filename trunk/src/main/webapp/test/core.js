@@ -1,13 +1,24 @@
 (function() {
-	var originalOptions = $.extend(true, {}, $.stream.options);
-
+	var script = "";
+	$.ajax("../jquery.stream.js", {async: false})
+	.success(function(data) {
+		script = data;
+	});
+	
 	this.teardown = function() {
 		$(window).trigger("unload.stream");
-		$.stream.setup(originalOptions);
+		$.globalEval(script);
 	};
 })();
 
-module("jQuery.stream", {teardown: teardown});
+module("jQuery.stream", {
+	setup: function() {
+		$.stream.setup({
+			enableXDR: true
+		});
+	},
+	teardown: teardown
+});
 
 test("Finding the first stream object", function() {
 	ok($.stream("stream", {}) == $.stream());
@@ -115,7 +126,10 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 	
 	module(moduleName, {
 		setup: function() {
-			$.stream.setup({type: type});
+			$.stream.setup({
+				type: type,
+				enableXDR: true
+			});
 		}, 
 		teardown: teardown
 	});
@@ -349,7 +363,6 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 	if (type === "http") {
 		asyncTest("XDomainRequest", function() {
 			$.stream("stream", {
-				enableXDR: true,
 				open: function(event, stream) {
 					ok(window.XDomainRequest ? !!stream.xdr : !stream.xdr);
 					start();
@@ -359,13 +372,63 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 			
 		asyncTest("Rewriting URL for XDomainRequest", function() {
 			$.stream("stream?message=true", {
-				enableXDR: true,
 				rewriteURL: function(url) {
 					ok(!!window.XDomainRequest);
 					return url + "&dataType=json";
 				},
 				message: function(event) {
 					equal(event.data, window.XDomainRequest ? "{\"data\":\"data\"}" : "data");
+					start();
+				}
+			});
+		});
+		
+		asyncTest("handleOpen", 3, function() {
+			$.stream.setup({
+				handleOpen: function(text) {
+					this.id = text.substring(0, text.indexOf("\r\n"));
+					this.message.index = text.indexOf("\r\n", this.id.length + "\r\n".length) + "\r\n".length;
+					
+					if (text.indexOf("OPEN", this.message.index) < 0) {
+						ok(true);
+						return false;
+					}
+					
+					ok(true);
+				}
+			});
+			
+			$.stream("stream", {
+				openData: {differentFormat: true, delayOpen: true},
+				open: function(event, stream) {
+					ok(true);
+					start();
+				}
+			});
+		});
+		
+		asyncTest("handleMessage", function() {
+			$.stream.setup({
+				handleOpen: function(text) {
+					this.id = text.substring(0, text.indexOf("\r\n"));
+					this.message.index = text.indexOf("\r\n", this.id.length + "\r\n".length) + "\r\n".length;
+				},
+				handleMessage: function(text) {
+					var end = text.indexOf("\r\n", this.message.index);
+					if (end < 0) {
+						return false;
+					}
+					
+					this.message.data = $.trim(text.substring(this.message.index, end));
+					this.message.index = end + "\r\n".length;
+				}
+			});
+			
+			$.stream("stream", {
+				openData: {differentFormat: true, dataType: "json", message: true},
+				dataType: "json",
+				message: function(event, stream) {
+					equal(event.data.data, "data");
 					start();
 				}
 			});

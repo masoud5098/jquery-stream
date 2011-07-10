@@ -224,6 +224,16 @@
 		// HTTP Streaming
 		http: {
 			open: function() {
+				// Data queue
+				this.dataQueue = [];
+				// Helper object for parsing response
+				this.message = {
+					// The index from which to start parsing
+					index: 0,
+					// The temporary data
+					data: ""
+				};
+				
 				// Chooses a proper transport
 				var transport = this.options.enableXDR && window.XDomainRequest ? "xdr" : window.ActiveXObject ? "iframe" : window.XMLHttpRequest ? "xhr" : null;
 				if (!transport) {
@@ -237,10 +247,8 @@
 					$.error("INVALID_STATE_ERR: Stream not open");
 				}
 				
-				if (arguments.length) {
-					// Converts data if not already a string and pushes it into the data queue
-					this.dataQueue.push((typeof data === "string" ? data : $.param(data, $.ajaxSettings.traditional)) + "&");
-				}
+				// Converts data if not already a string and pushes it into the data queue
+				this.dataQueue.push((typeof data === "string" ? data : $.param(data, $.ajaxSettings.traditional)) + "&");
 				
 				if (this.sending !== true) {
 					this.sending = true;
@@ -275,56 +283,71 @@
 				}
 			},
 			handleResponse: function(text) {
+				// Handles open
 				if (this.readyState === 0) {
-					// The top of the response is made up of the id and padding
-					this.id = text.substring(0, text.indexOf(";"));
-					this.message = {index: text.indexOf(";", this.id.length + 1) + 1, size: null, data: ""};
-					this.dataQueue = this.dataQueue || [];
+					if (this.options.handleOpen) {
+						if (this.options.handleOpen.call(this, text) === false) {
+							return;
+						}
+					} else {
+						// The top of the response is made up of the id and padding
+						this.id = text.substring(0, text.indexOf(";"));
+						// this.message.index = text.indexOf(";", this.id.length + ";".length) + ";".length;
+						this.message.index = text.indexOf(";", this.id.length + 1) + 1;
+					}
 					
 					this.readyState = 1;
 					this.trigger("open");
-					
-					// In case of reconnection, continues to communicate
-					this.send();
 				}
 				
-				// Parses messages
-				// message format = message-size ; message-data ;
+				// Handles messages
 				for (;;) {
-					if (this.message.size == null) {
-						// Checks a semicolon of size part
-						var sizeEnd = text.indexOf(";", this.message.index);
-						if (sizeEnd < 0) {
+					if (this.options.handleMessage) {
+						if (this.options.handleMessage.call(this, text) === false) {
+							return;
+						}
+					} else {
+						// Response could contain a single message, multiple messages or a fragment of a message
+						// default message format is message-size ; message-data ;
+						if (this.message.size == null) {
+							// Checks a semicolon of size part
+							var sizeEnd = text.indexOf(";", this.message.index);
+							if (sizeEnd < 0) {
+								return;
+							}
+							
+							this.message.size = +text.substring(this.message.index, sizeEnd);
+							// index: sizeEnd + ";".length,
+							this.message.index = sizeEnd + 1;
+						}
+						
+						var data = text.substr(this.message.index, this.message.size - this.message.data.length);
+						this.message.data += data;
+						this.message.index += data.length;
+
+						// Has this message been completed?
+						if (this.message.size !== this.message.data.length) {
 							return;
 						}
 						
-						this.message.size = +text.substring(this.message.index, sizeEnd);
-						this.message.index = sizeEnd + 1;
+						// Checks a semicolon of data part
+						var dataEnd = text.indexOf(";", this.message.index);
+						if (dataEnd < 0) {
+							return;
+						}
+						
+						// this.message.index = dataEnd + ";".length;
+						this.message.index = dataEnd + 1;
+						
+						// Completes parsing
+						delete this.message.size;
 					}
-					
-					var data = text.substr(this.message.index, this.message.size - this.message.data.length);
-					this.message.data += data;
-					this.message.index += data.length;
-
-					// Has this message been completed?
-					if (this.message.size !== this.message.data.length) {
-						return;
-					}
-					
-					// Checks a semicolon of data part
-					var dataEnd = text.indexOf(";", this.message.index);
-					if (dataEnd < 0) {
-						return;
-					}
-					this.message.index = dataEnd + 1;
-					
-					// Converts the data type
-					this.message.data = this.options.converters[this.options.dataType](this.message.data);
 					
 					if (this.readyState < 3) {
 						// Pseudo MessageEvent
 						this.trigger("message", {
-							data: this.message.data, 
+							// Converts the data type
+							data: this.options.converters[this.options.dataType](this.message.data), 
 							origin: "", 
 							lastEventId: "", 
 							source: null, 
@@ -332,8 +355,7 @@
 						});
 					}
 					
-					// Resets the data and size
-					this.message.size = null;
+					// Resets the data
 					this.message.data = "";
 				}
 			},
