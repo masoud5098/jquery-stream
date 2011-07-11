@@ -485,14 +485,25 @@
 						}
 					}
 					
-					var response = cdoc.body.firstChild;
+					var response = cdoc.body.firstChild,
+						readResponse = function() {
+							// Clones the element not to disturb the original one
+							var clone = response.cloneNode(true);
+							
+							// If the last character is a carriage return or a line feed, IE ignores it in the innerText property 
+							// therefore, we add another non-newline character to preserve it
+							clone.appendChild(cdoc.createTextNode("."));
+							
+							var text = clone.innerText;
+							return text.substring(0, text.length - 1);
+						};
 					
 					// Handles open event
-					this.handleResponse(response.innerText);
+					this.handleResponse(readResponse());
 					
 					// Handles message and close event
 					iterate(this, function() {
-						var text = response.innerText;
+						var text = readResponse();
 						if (text.length > this.message.index) {
 							this.handleResponse(text);
 							
@@ -515,7 +526,7 @@
 			}
 		},
 		
-		// XDomainRequest: Optionally IE9, IE8
+		// XDomainRequest: Optionally Internet Explorer 8+
 		xdr: {
 			connect: function() {
 				var self = this;
