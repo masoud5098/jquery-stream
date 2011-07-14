@@ -433,6 +433,48 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 				}
 			});
 		});
+		
+		asyncTest("handleSend", 4, function() {
+			var echo = "";
+			
+			$.stream.setup({
+				handleSend: function(type, options) {
+					switch (type) {
+					case "close":
+						options.data = {"metadata.type": type, "metadata.id": this.id};
+						break;
+					default:
+						if (options.data.message % 2) {
+							return false;
+						}
+					
+						$.extend(true, options, {
+							data: {"metadata.type": type, "metadata.id": this.id},
+							success: function() {
+								ok(true);
+							}
+						});
+						break;
+					}
+				}
+			});
+			
+			$.stream("stream", {
+				dataType: "json",
+				open: function(event, stream) {
+					for (var i = 0; i < 5; i++) {
+						stream.send({message: i});
+					}
+				},
+				message: function(event, stream) {
+					echo += event.data;
+					if (echo.length === 3) {
+						equal(echo, "024");						
+						start();
+					}
+				}
+			});
+		});
 	}
 	
 });

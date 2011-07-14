@@ -208,7 +208,7 @@
 					$.error("INVALID_STATE_ERR: Stream not open");
 				}
 				
-				this.ws.send(typeof data === "string" ? data : $.param(data, $.ajaxSettings.traditional));
+				this.ws.send(typeof data === "string" ? data : param(data));
 			},
 			close: function() {
 				if (this.readyState < 2) {
@@ -245,36 +245,69 @@
 					$.error("INVALID_STATE_ERR: Stream not open");
 				}
 				
-				// Converts data if not already a string and pushes it into the data queue
-				this.dataQueue.push((typeof data === "string" ? data : $.param(data, $.ajaxSettings.traditional)) + "&");
+				// Pushes the data into the queue
+				this.dataQueue.push(data);
 				
 				if (this.sending !== true) {
 					this.sending = true;
 					
+					var self = this;
+					
 					// Performs an Ajax iterating through the data queue
 					(function post() {
-						if (this.readyState === 1 && this.dataQueue.length) {
-							$.ajax({
-								url: this.url,
-								context: this,
-								type: "POST",
-								data: this.dataQueue.shift() + paramMetadata("send", {id: this.id}),
-								complete: post
-							});
+						if (self.readyState === 1 && self.dataQueue.length) {
+							var type = "send",
+								options = {
+									url: self.url,
+									type: "POST",
+									data: self.dataQueue.shift()
+								};
+							
+							if (self.options.handleSend) {
+								if (self.options.handleSend.call(self, type, options) === false) {
+									post();
+									return;
+								}
+							} else {
+								// Converts data if not already a string and attaches metadata
+								options.data = (typeof options.data === "string" ? options.data : param(options.data))
+									+ "&" 
+									+ paramMetadata({type: type, id: self.id});
+							}
+							
+							// Adds the complete callback
+							$.ajax(options).complete(post);
 						} else {
-							this.sending = false;
+							self.sending = false;
 						}
-					}).call(this);
+					})();
 				}
 			},
 			close: function() {
 				// Do nothing if the readyState is in the CLOSING or CLOSED
 				if (this.readyState < 2) {
 					this.readyState = 2;
-
-					// Notifies the server
-					$.post(this.url, paramMetadata("close", {id: this.id}));
 					
+					var skip,
+						type = "close",
+						options = {
+							url: this.url,
+							type: "POST"
+						};
+					
+					if (this.options.handleSend) {
+						if (this.options.handleSend.call(this, type, options) === false) {
+							skip = true;
+						}
+					} else {
+						options.data = paramMetadata({type: type, id: this.id});
+					}
+					
+					if (!skip) {
+						// Notifies the server
+						$.ajax(options);
+					}
+
 					// Prevents reconnecting
 					this.options.reconnect = false;
 					this.disconnect();
@@ -603,7 +636,7 @@
 
 		// Converts data into a query string
 		if (data && typeof data !== "string") {
-			data = $.param(data, $.ajaxSettings.traditional);
+			data = param(data);
 		}
 		
 		// Attaches a time stamp to prevent caching
@@ -611,15 +644,17 @@
 		+ (data ? ("&" + data) : "");
 	}
 
-	function paramMetadata(type, props) {
-		props = $.extend({}, props, {type: type});
-		
+	function paramMetadata(props) {
 		var answer = {};
 		for (var key in props) {
 			answer["metadata." + key] = props[key];
 		}
 		
-		return $.param(answer, $.ajaxSettings.traditional);
+		return param(answer);
+	}
+	
+	function param(data) {
+		return $.param(data, $.ajaxSettings.traditional);
 	}
 	
 	$.stream = function(url, options) {
