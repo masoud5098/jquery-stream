@@ -4,7 +4,7 @@
 	<groupId>flowersinthesand</groupId>
 	<artifactId>jquery-stream</artifactId>
 	<name>jQuery Stream</name>
-	<version>1.1.2pre</version>
+	<version>1.2pre</version>
 	<packaging>war</packaging>
 	<description>Comet Streaming JavaScript Library</description>
 	<url>http://code.google.com/p/jquery-stream/</url>

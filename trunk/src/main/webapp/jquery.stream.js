@@ -7,7 +7,7 @@
  * Licensed under the Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Compatible with jQuery 1.4+
+ * Compatible with jQuery 1.5+
  */
 (function($, undefined) {
 
@@ -115,9 +115,7 @@
 			// Message data converters
 			converters: {
 				text: window.String, 
-				// jQuery.parseJSON is in jQuery 1.4.1
 				json: $.parseJSON, 
-				// jQuery.parseXML is in jQuery 1.5
 				xml: $.parseXML
 			}
 			// Additional parameters for GET request
