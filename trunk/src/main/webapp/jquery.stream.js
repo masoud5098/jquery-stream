@@ -11,8 +11,8 @@
  */
 (function($, undefined) {
 
-	// Stream object instances
-	var instances = {},
+	var // Stream object instances
+		instances = {},
 	
 		// Streaming agents
 		agents = {},
@@ -23,51 +23,100 @@
 		// Does the throbber of doom exist?
 		throbber = $.browser.webkit && !$.isReady;
 	
+	// Once the window is fully loaded, the throbber of doom will not be appearing
+	if (throbber) {
+		$(window).load(function() {
+			throbber = false;
+		});
+	}
+	
 	// Stream is based on The WebSocket API 
 	// W3C Working Draft 19 April 2011 - http://www.w3.org/TR/2011/WD-websockets-20110419/
-	function Stream(url, options) {
+	$.stream = function(url, options) {
+		// Returns the first Stream in the document
+		if (!url) {
+			for (var i in instances) {
+				return instances[i];
+			}
+			return null;
+			
+		// Returns the Stream to which the specified url or alias is mapped. 
+		} else if (!options) {
+			return instances[url] || null;
+			
+		// If the Stream to which the given url is mapped exists and not closed, returns it
+		} else if (instances[url] && instances[url].readyState !== 3) {
+			return instances[url];
+		}
 		
-		// Assigns url and merges options
-		this.url = url;
-		this.options = $.extend(true, {}, this.options, options);
+		var stream = {
+			
+				url: url,
+				
+				// Merges options
+				options: $.stream.setup({}, options),
+				
+				// The state of stream
+				// 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
+				readyState: 0, 
+				
+				trigger: function(event, props) {
+					event = event.type ? 
+						event : 
+						$.extend($.Event(event), {bubbles: false, cancelable: false}, props);
+					
+					var handlers = this.options[event.type],
+						applyArgs = [event, this];
+					
+					// Triggers local event handlers
+					for (var i = 0; i < handlers.length; i++) {
+						handlers[i].apply(this.options.context, applyArgs);
+					}
+
+					if (this.options.global) {
+						// Triggers global event handlers
+						$.event.trigger("stream" + event.type.substring(0, 1).toUpperCase() + event.type.substring(1), applyArgs);
+					}
+				}
+				
+			};
 		
 		// Converts a value into a array
 		for (var i in {open: 1, message: 1, error: 1, close: 1}) {
-			this.options[i] = $.makeArray(this.options[i]); 
+			stream.options[i] = $.makeArray(stream.options[i]); 
 		}
 		
 		// The url and alias are a identifier of this instance within the document
-		instances[this.url] = this;
-		if (this.options.alias) {
-			instances[this.options.alias] = this;
+		instances[stream.url] = stream;
+		if (stream.options.alias) {
+			instances[stream.options.alias] = stream;
 		}
 		
 		// Stream type
-		var match = /^(http|ws)s?:/.exec(this.url);
-		this.options.type = (match && match[1]) || this.options.type;
+		var match = /^(http|ws)s?:/.exec(stream.url);
+		stream.options.type = (match && match[1]) || stream.options.type;
 		
 		// According to stream type, extends an agent
-		$.extend(true, this, agents[this.options.type]);
+		$.extend(true, stream, agents[stream.options.type]);
 		
 		// Open
-		if (this.options.type === "ws" || !throbber) {
-			this.open();
+		if (stream.options.type === "ws" || !throbber) {
+			stream.open();
 		} else {
-			var self = this;
-			switch (this.options.throbber.type || this.options.throbber) {
+			switch (stream.options.throbber.type || stream.options.throbber) {
 			case "lazy":
 				$(window).load(function() {
 					setTimeout(function() {
-						self.open();
-					}, self.options.throbber.delay || 50);
+						stream.open();
+					}, stream.options.throbber.delay || 50);
 				});
 				break;
 			case "reconnect":
-				self.open();
+				stream.open();
 				$(window).load(function() {
-					if (self.readyState === 0) {
-						self.options.open.push(function() {
-							self.options.open.pop();
+					if (stream.readyState === 0) {
+						stream.options.open.push(function() {
+							stream.options.open.pop();
 							setTimeout(function() {
 								reconnect();
 							}, 10);
@@ -77,30 +126,49 @@
 					}
 					
 					function reconnect() {
-						self.options.close.push(function() {
-							self.options.close.pop();
+						stream.options.close.push(function() {
+							stream.options.close.pop();
 							setTimeout(function() {
-								new Stream(self.url, self.options);
-							}, self.options.throbber.delay || 50);
+								$.stream(stream.url, stream.options);
+							}, stream.options.throbber.delay || 50);
 						});
 						
-						var reconn = self.options.reconnect;
-						self.close();
-						self.options.reconnect = reconn;
+						var reconn = stream.options.reconnect;
+						stream.close();
+						stream.options.reconnect = reconn;
 					}
 				});
 				break;
 			}
 		}
-	}
 		
-	$.extend(Stream.prototype, {
+		return stream;
+	};
+	
+	$.extend($.stream, {
 		
-		// The state of stream
-		// 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
-		readyState: 0, 
+		version: "@VERSION",
 		
-		// Default options
+		// Logic borrowed from jQuery.ajaxSetup
+		setup: function(target, options) {
+			if (!options) {
+				options = target;
+				target = $.extend(true, $.stream.options, options); 
+			} else {
+				$.extend(true, target, $.stream.options, options);
+			}
+			
+			for(var field in {context: 1, url: 1}) {
+				if (field in options) {
+					target[field] = options[field];
+				} else if(field in $.stream.options) {
+					target[field] = $.stream.options[field];
+				}
+			}
+			
+			return target;
+		},
+		
 		options: {
 			// Stream type
 			type: window.WebSocket ? "ws" : "http",
@@ -125,35 +193,9 @@
 			// XDomainRequest transport
 			// enableXDR: false,
 			// rewriteURL: null
-		},
-		
-		trigger: function(event, props) {
-			event = event.type ? 
-				event : 
-				$.extend($.Event(event), {bubbles: false, cancelable: false}, props);
-			
-			var handlers = this.options[event.type],
-				applyArgs = [event, this];
-			
-			// Triggers local event handlers
-			for (var i = 0; i < handlers.length; i++) {
-				handlers[i].apply(this.options.context, applyArgs);
-			}
-
-			if (this.options.global) {
-				// Triggers global event handlers
-				$.event.trigger("stream" + event.type.substring(0, 1).toUpperCase() + event.type.substring(1), applyArgs);
-			}
 		}
-		
-	});
 	
-	// Once the window is fully loaded, the throbber of doom will not be appearing
-	if (throbber) {
-		$(window).load(function() {
-			throbber = false;
-		});
-	}
+	});
 	
 	$.extend(agents, {
 		
@@ -190,7 +232,7 @@
 
 						// Reconnect?
 						if (self.options.reconnect && readyState !== 0) {
-							new Stream(self.url, self.options);
+							$.stream(self.url, self.options);
 						}
 					}
 				});
@@ -424,7 +466,7 @@
 					
 					// Reconnect?
 					if (this.options.reconnect) {
-						new Stream(this.url, this.options);
+						$.stream(this.url, this.options);
 					}
 				}
 			}
@@ -656,32 +698,6 @@
 	function param(data) {
 		return $.param(data, $.ajaxSettings.traditional);
 	}
-	
-	$.stream = function(url, options) {
-		switch (arguments.length) {
-		case 0:
-			for (var i in instances) {
-				return instances[i];
-			}
-			return null;
-		case 1:
-			return instances[url] || null;
-		default:
-			return instances[url] && instances[url].readyState !== 3 ? instances[url] : new Stream(url, options);
-		}
-	};
-	
-	$.extend($.stream, {
-		
-		version: "@VERSION",
-		
-		options: Stream.prototype.options,
-		
-		setup: function(options) {
-			return $.extend(true, Stream.prototype.options, options);
-		}
-	
-	});
 	
 	$.each("streamOpen streamMessage streamError streamClose".split(" "), function(i, o) {
 		$.fn[o] = function(f) {
