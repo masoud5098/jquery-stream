@@ -361,15 +361,6 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 	}
 	
 	if (type === "http") {
-		asyncTest("XDomainRequest", function() {
-			$.stream("stream", {
-				open: function(event, stream) {
-					ok(window.XDomainRequest ? !!stream.xdr : !stream.xdr);
-					start();
-				}
-			});
-		});
-			
 		asyncTest("Rewriting URL for XDomainRequest", function() {
 			$.stream("stream?message=true", {
 				rewriteURL: function(url) {
@@ -385,11 +376,11 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 		
 		asyncTest("handleOpen", 3, function() {
 			$.stream.setup({
-				handleOpen: function(text) {
-					this.id = text.substring(0, text.indexOf("\r\n"));
-					this.message.index = text.indexOf("\r\n", this.id.length + "\r\n".length) + "\r\n".length;
+				handleOpen: function(text, message, stream) {
+					stream.id = text.substring(0, text.indexOf("\r\n"));
+					message.index = text.indexOf("\r\n", stream.id.length + "\r\n".length) + "\r\n".length;
 					
-					if (text.indexOf("OPEN", this.message.index) < 0) {
+					if (text.indexOf("OPEN", message.index) < 0) {
 						ok(true);
 						return false;
 					}
@@ -409,18 +400,18 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 		
 		asyncTest("handleMessage", function() {
 			$.stream.setup({
-				handleOpen: function(text) {
-					this.id = text.substring(0, text.indexOf("\r\n"));
-					this.message.index = text.indexOf("\r\n", this.id.length + "\r\n".length) + "\r\n".length;
+				handleOpen: function(text, message, stream) {
+					stream.id = text.substring(0, text.indexOf("\r\n"));
+					message.index = text.indexOf("\r\n", stream.id.length + "\r\n".length) + "\r\n".length;
 				},
-				handleMessage: function(text) {
-					var end = text.indexOf("\r\n", this.message.index);
+				handleMessage: function(text, message, stream) {
+					var end = text.indexOf("\r\n", message.index);
 					if (end < 0) {
 						return false;
 					}
 					
-					this.message.data = $.trim(text.substring(this.message.index, end));
-					this.message.index = end + "\r\n".length;
+					message.data = $.trim(text.substring(message.index, end));
+					message.index = end + "\r\n".length;
 				}
 			});
 			
@@ -436,12 +427,16 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 		
 		asyncTest("handleSend", 4, function() {
 			var echo = "";
-			
+
 			$.stream.setup({
-				handleSend: function(type, options) {
+				handleOpen: function(text, message, stream) {
+					stream.id = text.substring(0, text.indexOf(";"));
+					message.index = text.indexOf(";", stream.id.length + 1) + 1;
+				},
+				handleSend: function(type, options, stream) {
 					switch (type) {
 					case "close":
-						options.data = {"metadata.type": type, "metadata.id": this.id};
+						options.data = {"metadata.type": type, "metadata.id": stream.id};
 						break;
 					default:
 						if (options.data.message % 2) {
@@ -449,7 +444,7 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 						}
 					
 						$.extend(true, options, {
-							data: {"metadata.type": type, "metadata.id": this.id},
+							data: {"metadata.type": type, "metadata.id": stream.id},
 							success: function() {
 								ok(true);
 							}
