@@ -398,7 +398,7 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 			});
 		});
 		
-		asyncTest("handleMessage", function() {
+		asyncTest("handleMessage - text/plain", function() {
 			$.stream.setup({
 				handleOpen: function(text, message, stream) {
 					stream.id = text.substring(0, text.indexOf("\r\n"));
@@ -420,6 +420,42 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 				dataType: "json",
 				message: function(event, stream) {
 					equal(event.data.data, "data");
+					start();
+				}
+			});
+		});
+		
+		asyncTest("handleMessage - text/html", function() {
+			$.stream.setup({
+				handleOpen: function(text, message) {
+					message.index = text.length;
+				},
+				handleMessage: function(text, message, stream) {
+					if (!message.start) {
+						var start = text.indexOf("<script>app.handle('", message.index);
+						if (start < 0) {
+							return false;
+						}
+						
+						message.index = start + "<script>app.handle('".length;
+						message.start = true;
+					}
+					
+					var end = text.indexOf("')</script>", message.index);
+					if (end < 0) {
+						return false;
+					}
+					
+					message.data = text.substring(message.index, end);
+					message.index = end + "')</script>".length;
+					delete message.start;
+				}
+			});
+			
+			$.stream("stream", {
+				openData: {htmlContent: true, message: true},
+				message: function(event, stream) {
+					equal(event.data, "Hello World");
 					start();
 				}
 			});

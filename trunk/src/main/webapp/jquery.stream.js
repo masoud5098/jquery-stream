@@ -560,6 +560,23 @@
 								return text.substring(0, text.length - 1);
 							};
 						
+						// To support a document whose content type is not text/plain
+						if (!$.nodeName(response, "pre")) {
+							// Injects a plaintext element which renders text without interpreting the HTML and cannot be stopped
+							// it is deprecated in HTML5, but still works
+							var head = cdoc.head || cdoc.getElementsByTagName("head")[0],
+								script = cdoc.createElement("script"),
+								id = $.now();
+							
+							script.text = "document.write('<plaintext id=\"" + id + "\">')";
+							
+							head.insertBefore(script, head.firstChild);
+							head.removeChild(script);
+							
+							// The plaintext element will be the response container
+							response = cdoc.getElementById(id);
+						}
+						
 						// Handles open event
 						handler.response(readResponse());
 						

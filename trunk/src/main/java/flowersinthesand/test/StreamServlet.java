@@ -40,7 +40,8 @@ public class StreamServlet extends WebSocketServlet {
 			throws ServletException, IOException {
 
 		response.setCharacterEncoding("utf-8");
-		response.setContentType("text/plain");
+		final boolean htmlContent = Boolean.valueOf(request.getParameter("htmlContent"));
+		response.setContentType(htmlContent ? "text/html" : "text/plain");
 		response.setHeader("Access-Control-Allow-Origin", "*");
 
 		final boolean differentFormat = Boolean.valueOf(request.getParameter("differentFormat"));
@@ -91,8 +92,13 @@ public class StreamServlet extends WebSocketServlet {
 
 				@Override
 				public void run() {
-					sendMessage(writer, createMessage(request.getParameter("dataType")),
-							differentFormat);
+					if (htmlContent) {
+						writer.print("<script>app.handle('Hello World')</script>");
+						writer.flush();
+					} else {
+						sendMessage(writer, createMessage(request.getParameter("dataType")),
+								differentFormat);
+					}
 				}
 
 			}, 100);
