@@ -463,7 +463,8 @@
 
 		// XMLHttpRequest: Modern browsers except Internet Explorer
 		xhr: function(stream, handler, message) {
-			var polling, 
+			var stop,
+				polling, 
 				preStatus, 
 				xhr = new window.XMLHttpRequest();
 			
@@ -481,7 +482,7 @@
 					if ($.browser.opera && !polling) {
 						polling = true;
 						
-						iterate(function() {
+						stop = iterate(function() {
 							if (xhr.readyState === 4) {
 								return false;
 							}
@@ -507,6 +508,10 @@
 					xhr.send();
 				},
 				close: function() {
+					if (stop) {
+						stop();
+					}
+					
 					// Saves status
 					try {
 						preStatus = xhr.status;
@@ -518,7 +523,16 @@
 
 		// Hidden iframe: Internet Explorer
 		iframe: function(stream, handler, message) {
-			var doc = new window.ActiveXObject("htmlfile");
+			var stop,
+				closed,
+				onload = function() {
+					if (!closed) {
+						closed = true;
+						handler.close();
+					}
+				},
+				doc = new window.ActiveXObject("htmlfile");
+			
 			doc.open();
 			doc.close();
 			
@@ -532,7 +546,7 @@
 					// For the server to respond in a consistent format regardless of user agent, we polls response text
 					var cdoc = iframe.contentDocument || iframe.contentWindow.document;
 
-					iterate(function() {
+					stop = iterate(function() {
 						if (!cdoc.documentElement) {
 							return;
 						}
@@ -581,7 +595,7 @@
 						handler.response(readResponse());
 						
 						// Handles message and close event
-						iterate(function() {
+						stop = iterate(function() {
 							var text = readResponse();
 							if (text.length > message.index) {
 								handler.response(text);
@@ -592,7 +606,7 @@
 							}
 
 							if (cdoc.readyState === "complete") {
-								handler.close();
+								onload();
 								return false;
 							}
 						});
@@ -601,7 +615,12 @@
 					});
 				},
 				close: function() {
+					if (stop) {
+						stop();
+					}
+					
 					doc.execCommand("Stop");
+					onload();
 				}
 			};
 		},
@@ -719,8 +738,10 @@
 	}
 	
 	function iterate(fn) {
+		var timeoutId;
+		
 		(function loop() {
-			setTimeout(function() {
+			timeoutId = setTimeout(function() {
 				if (fn() === false) {
 					return;
 				}
@@ -728,6 +749,10 @@
 				loop();
 			}, 0);
 		})();
+		
+		return function() {
+			clearTimeout(timeoutId);
+		};
 	}
 	
 })(jQuery);
