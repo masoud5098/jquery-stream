@@ -184,6 +184,9 @@
 			// XDomainRequest transport
 			// enableXDR: false,
 			// rewriteURL: null
+			// Polling interval
+			// operaInterval: 0
+			// iframeInterval: 0
 		}
 	
 	});
@@ -490,7 +493,7 @@
 							if (xhr.responseText.length > message.index) {
 								handler.response(xhr.responseText);
 							}
-						});
+						}, stream.options.operaInterval);
 					}
 					break;
 				// Handles error or close event
@@ -609,7 +612,7 @@
 								onload();
 								return false;
 							}
-						});
+						}, stream.options.iframeInterval);
 						
 						return false;
 					});
@@ -629,12 +632,12 @@
 		xdr: function(stream, handler) {
 			var xdr = new window.XDomainRequest(),
 				rewriteURL = stream.options.rewriteURL || function(url) {
+					// Maintaining session by rewriting URL
+					// http://stackoverflow.com/questions/6453779/maintaining-session-by-rewriting-url
 					var rewriters = {
-						// Java - http://download.oracle.com/javaee/5/tutorial/doc/bnagm.html
 						JSESSIONID: function(sid) {
 							return url.replace(/;jsessionid=[^\?]*|(\?)|$/, ";jsessionid=" + sid + "$1");
 						},
-						// PHP - http://www.php.net/manual/en/session.idpassing.php
 						PHPSESSID: function(sid) {
 							return url.replace(/\?PHPSESSID=[^&]*&?|\?|$/, "?PHPSESSID=" + sid + "&").replace(/&$/, "");
 						}
@@ -737,8 +740,12 @@
 		return $.param(data, $.ajaxSettings.traditional);
 	}
 	
-	function iterate(fn) {
+	function iterate(fn, interval) {
 		var timeoutId;
+		
+		// Though the interval is 0 for real-time application, there is a delay between setTimeout calls
+		// For detail, see https://developer.mozilla.org/en/window.setTimeout#Minimum_delay_and_timeout_nesting
+		interval = interval || 0;
 		
 		(function loop() {
 			timeoutId = setTimeout(function() {
@@ -747,7 +754,7 @@
 				}
 				
 				loop();
-			}, 0);
+			}, interval);
 		})();
 		
 		return function() {
