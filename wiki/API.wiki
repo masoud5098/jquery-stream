@@ -1,4 +1,4 @@
-#summary jQuery Stream 1.1.1 API Reference
+#summary jQuery Stream 1.2 API Reference
 #labels Featured
 =API Reference=
 <wiki:toc max_depth="3" />
@@ -8,7 +8,13 @@ The facade of Stream.
 
 The mapping between the jQuery version and the jQuery Stream version is:
 || *jQuery Stream version* || *jQuery version* ||
-|| 1.x || 1.4||
+|| 1.2 || 1.5||
+|| 1.1 || 1.4||
+|| 1.0 || 1.4||
+
+<h3>[http://code.google.com/p/jquery-stream/issues/list?can=1&q=label%3ATarget-1.2 Version 1.2]</h3>
+
+TODO
 
 <h3>[http://code.google.com/p/jquery-stream/issues/list?can=1&q=label%3ATarget-1.1.1 Version 1.1.1]</h3>
 
@@ -62,11 +68,21 @@ Creates a Stream connection (a long-held HTTP request or a !WebSocket connection
 
  <b>global</b> <font size="1">(added in 1.1.1)</font> - Whether to trigger global Stream event handlers for this stream. The default is {{{true}}}.
 
+ <b>handleMessage</b> <font size="1">(added in 1.2)</font> - TODO
+
+ <b>handleOpen</b> <font size="1">(added in 1.2)</font> - TODO
+
+ <b>handleSend</b> <font size="1">(added in 1.2)</font> - TODO
+
+ <b>iframeInterval</b> <font size="1">(added in 1.2)</font> - TODO
+
  <b>message</b> - A function or an array of functions to be called if the stream receives a data. Each function receives a event named {{{message}}} which is based on {{{jQuery.Event}}} and {{{MessageEvent}}} interface and the stream instance as the arguments. The event has the data attribute which is sent by the server and is converted according to {{{dataType}}}.
 
  <b>open</b> - A function or an array of functions to be called if the stream opens. Each function receives a simple event named {{{open}}} which is based on {{{jQuery.Event}}} and the stream instance as the arguments.
 
  <b>openData</b> <font size="1">(added in 1.1.1)</font> - Additional parameters for open request. It is serialized to a query string and appended to the url.
+
+ <b>operaInterval</b> <font size="1">(added in 1.2)</font> - TODO
 
  <b>protocols</b> <font size="1">(added in 1.1)</font> - An argument to be used to create !WebSocket instance.
 
