@@ -258,8 +258,6 @@
 				handleOpen,
 				handleMessage,
 				handleSend,
-				// Optional identifier within the server
-				id,
 				// Latch for AJAX
 				sending,
 				// Data queue
@@ -286,11 +284,12 @@
 			}
 			
 			// Default response handler
-			handleOpen = stream.options.handleOpen || function(text, message) {
+			handleOpen = stream.options.handleOpen || function(text, message, stream) {
 				// The top of the response is made up of the id and padding
-				id = text.substring(0, text.indexOf(";"));
-				// message.index = text.indexOf(";", id.length + ";".length) + ";".length;
-				message.index = text.indexOf(";", id.length + 1) + 1;
+				// optional identifier within the server
+				stream.id = text.substring(0, text.indexOf(";"));
+				// message.index = text.indexOf(";", stream.id.length + ";".length) + ";".length;
+				message.index = text.indexOf(";", stream.id.length + 1) + 1;
 			};
 			handleMessage = stream.options.handleMessage || function(text, message) {
 				// Response could contain a single message, multiple messages or a fragment of a message
@@ -330,8 +329,8 @@
 			};
 			
 			// Default request handler
-			handleSend = stream.options.handleSend || function(type, options) {
-				var metadata = {"metadata.id": id, "metadata.type": type};
+			handleSend = stream.options.handleSend || function(type, options, stream) {
+				var metadata = {"metadata.id": stream.id, "metadata.type": type};
 				
 				options.data = 
 					// Close

@@ -465,10 +465,6 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 			var echo = "";
 
 			$.stream.setup({
-				handleOpen: function(text, message, stream) {
-					stream.id = text.substring(0, text.indexOf(";"));
-					message.index = text.indexOf(";", stream.id.length + 1) + 1;
-				},
 				handleSend: function(type, options, stream) {
 					switch (type) {
 					case "close":
