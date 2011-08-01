@@ -576,7 +576,7 @@
 								return text.substring(0, text.length - 1);
 							};
 						
-						// To support a document whose content type is not text/plain
+						// To support text/html content type
 						if (!$.nodeName(response, "pre")) {
 							// Injects a plaintext element which renders text without interpreting the HTML and cannot be stopped
 							// it is deprecated in HTML5, but still works
