@@ -563,7 +563,7 @@
 							}
 						}
 						
-						var response = cdoc.body.firstChild,
+						var response = cdoc.body.lastChild,
 							readResponse = function() {
 								// Clones the element not to disturb the original one
 								var clone = response.cloneNode(true);
@@ -580,17 +580,16 @@
 						if (!$.nodeName(response, "pre")) {
 							// Injects a plaintext element which renders text without interpreting the HTML and cannot be stopped
 							// it is deprecated in HTML5, but still works
-							var head = cdoc.head || cdoc.getElementsByTagName("head")[0],
-								script = cdoc.createElement("script"),
-								id = $.now();
+							var head = cdoc.head || cdoc.getElementsByTagName("head")[0] || cdoc.documentElement,
+								script = cdoc.createElement("script");
 							
-							script.text = "document.write('<plaintext id=\"" + id + "\">')";
+							script.text = "document.write('<plaintext>')";
 							
 							head.insertBefore(script, head.firstChild);
 							head.removeChild(script);
 							
 							// The plaintext element will be the response container
-							response = cdoc.getElementById(id);
+							response = cdoc.body.lastChild;
 						}
 						
 						// Handles open event
