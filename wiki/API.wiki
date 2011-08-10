@@ -392,11 +392,13 @@ Stream Object is the main agent that provides Comet Streaming using HTTP and !We
 It doesn't rely on any specific server-side technology and third-party plugin-in such as ActiveX and Flash, so can be used with any server-side technology supporting asynchronous processing as long as the server meets the requirements depending on the protocol. For details about the requirements, see ServerSideProcessing.
 
 <h3>Two-way communication over !WebSocket</h3>
+
 Stream transparently wraps !WebSocket instance. 
 
 If the stream receives a non-string data via {{{send}}} method, the stream converts it into a query string by using {{{jQuery.param}}} and transmits it to the server. In the future, this feature will be changed to consider binary data.
 
 <h3>Two-way communication over HTTP</h3>
+
 Stream performs HTTP Streaming by choosing proper transport according to browser and two-way communication by simulating full duplex socket under customizable interaction rules.
 
 <h4>Transport</h4>
