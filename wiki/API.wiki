@@ -14,7 +14,11 @@ The mapping between the jQuery version and the jQuery Stream version is:
 
 <h3>[http://code.google.com/p/jquery-stream/issues/list?can=1&q=label%3ATarget-1.2 Version 1.2]</h3>
 
-TODO
+1.2 focuses on the integration with the existing server-side framework providing comet functionality and provides the low-level handlers that can directly deal with the interaction with the server.
+ * response handler - handleOpen and handleMessage
+ * request handler - handleSend
+ * text/html support
+ * operaInterval and iframeInterval option
 
 <h3>[http://code.google.com/p/jquery-stream/issues/list?can=1&q=label%3ATarget-1.1.1 Version 1.1.1]</h3>
 
@@ -68,13 +72,13 @@ Creates a Stream connection (a long-held HTTP request or a !WebSocket connection
 
  <b>global</b> <font size="1">(added in 1.1.1)</font> - Whether to trigger global Stream event handlers for this stream. The default is {{{true}}}.
 
- <b>handleMessage</b> <font size="1">(added in 1.2)</font> - TODO
+ <b>handleMessage</b> <font size="1">(added in 1.2)</font> - A response handler for HTTP Streaming that can be executed whenever the transport receives a response from the server after it is open. The handler receives the following as parameters: the response text sent from the server; a helper object for parsing response; the stream. The handler must set a {{{index}}} property of the second argument to a last index of parsed text and set a {{{data}}} property to parsed text. If the handler doesn't return {{{false}}}, the stream will fire a message event regarding a value of the {{{data}}} property of the helper object for parsing response as the data of the event.
 
- <b>handleOpen</b> <font size="1">(added in 1.2)</font> - TODO
+ <b>handleOpen</b> <font size="1">(added in 1.2)</font> - A response handler for HTTP Streaming that can be executed whenever the transport receives a response from the server before it is open. The handler gets passed three arguments: the response text sent from the server - empty string means that the transport is iframe and the response is html; a helper object for parsing response; the stream. If the handler returns anything but {{{false}}}, a open event will be fired so that the handler will not be executed again.
 
- <b>handleSend</b> <font size="1">(added in 1.2)</font> - TODO
+ <b>handleSend</b> <font size="1">(added in 1.2)</font> - A request handler for HTTP Streaming to be called before the stream communicate with the server. The handler gets passed three arguments: the type of the request; the {{{jQuery.ajax}}} options; the stream. Returning {{{false}}} cancels that request.
 
- <b>iframeInterval</b> <font size="1">(added in 1.2)</font> - TODO
+ <b>iframeInterval</b> <font size="1">(added in 1.2)</font> - A polling interval for HTTP Streaming in Internet Explorer. The stream will check changes in the response per the interval in milliseconds, and it works only with iframe transport. The default is {{{0}}}, but the effective value varies with browser version.
 
  <b>message</b> - A function or an array of functions to be called if the stream receives a data. Each function receives a event named {{{message}}} which is based on {{{jQuery.Event}}} and {{{MessageEvent}}} interface and the stream instance as the arguments. The event has the data attribute which is sent by the server and is converted according to {{{dataType}}}.
 
@@ -82,7 +86,7 @@ Creates a Stream connection (a long-held HTTP request or a !WebSocket connection
 
  <b>openData</b> <font size="1">(added in 1.1.1)</font> - Additional parameters for open request. It is serialized to a query string and appended to the url.
 
- <b>operaInterval</b> <font size="1">(added in 1.2)</font> - TODO
+ <b>operaInterval</b> <font size="1">(added in 1.2)</font> - A polling interval for HTTP Streaming in Opera. The stream will check changes in the response per the interval in milliseconds. The default is {{{0}}}, but the effective value varies with browser version.
 
  <b>protocols</b> <font size="1">(added in 1.1)</font> - An argument to be used to create !WebSocket instance.
 
@@ -94,7 +98,7 @@ Creates a Stream connection (a long-held HTTP request or a !WebSocket connection
   lazy - After the window's load event fires and some {{{delay}}}, it opens a Stream connection. The default setting for lazy is {{{{type: "lazy", delay: 50}}}} or simply {{{"lazy"}}}. It is suitable for typical use, unless the page contains many resources so the time taken for loading is very long. This is default.<br/>
   reconnect - Regardless of the window's load event, it opens a Stream connection immediately and closes it when the window's load event fires. Likewise after some {{{delay}}}, it opens a Stream connection again. The default setting for reconnect is {{{{type: "reconnect", delay: 50}}}} or simply {{{"reconnect"}}}. The request which opens a Stream is used twice, but you can provide seamless Stream for the user navigating pages.
 
- Since both of the above strategy use the window's load event handler, a logic creating a Stream (i.e {{{jQuery.stream("/stream")}}}) must not be located there in order to work this properly.
+ Since both of the above strategy use the window's load event handler, a logic creating a Stream (i.e {{{jQuery.stream("/stream", {})}}}) must not be located there in order to work this properly.
   * iOS Safari and Android Chrome are currently unsupported.
   * The load event of window doesn't consider ajax request, so when the event fires, incompleted Ajax request can get the throbber to keep spinning.
 
@@ -262,6 +266,51 @@ $.stream("/stream", {
 });
 }}}
 
+*Example: * Integrating with existing stream
+{{{
+$.stream("/legacy-stream", {
+    // If there is no id
+    handleOpen: function(text, message, stream) {
+        message.index = text.length;
+    },
+    // If the messages are separated by \r\n
+    handleMessage: function(text, message) {
+        var end = text.indexOf("\r\n", message.index);
+        if (end < 0) {
+        	return false;
+        }
+        
+        message.data = text.substring(message.index, end);
+        message.index = end + "\r\n".length;
+    },
+    // If there is no need to communicate with the server
+    handleSend: function() {
+        return false;
+    }
+    dataType: "json"
+})
+}}}
+
+*Example: * Modifying request
+{{{
+$.stream("/stream", {
+    // if you only need send-type request and don't need metadata
+    handleSend: function(type, options, stream) {
+        if (type !== "send") {
+            return false;
+        }
+        
+        // You can also attach Ajax event handler
+        options.success = function() {
+            alert("success!");
+        }
+        options.error = function() {
+            alert("error!");
+        }
+    }
+})
+}}}
+
 ===jQuery.stream.version===
 {{{String jQuery.stream.version}}}
 
@@ -338,42 +387,38 @@ $("#form :button").streamClose(function(e, event, stream) {
 }}}
 
 == Stream Object ==
-Stream Object is the main agent that provides Comet Streaming using HTTP and !WebSocket protocol. It is based on [http://dev.w3.org/html5/websockets/ The WebSocket API] which is the ultimate solution to true two-way communication between a client and a server.
+Stream Object is the main agent that provides Comet Streaming using HTTP and !WebSocket protocol. It is based on [http://dev.w3.org/html5/websockets/ The WebSocket API] which is the ultimate solution to true two-way communication between a client and a server. The current target !WebSocket API version - [http://www.w3.org/TR/2011/WD-websockets-20110419/ W3C Working Draft 19 April 2011].
 
-it doesn't rely on any specific server-side technology and third-party plugin-in such as ActiveX and Flash, so can be used with any server-side technology supporting asynchronous processing as long as the server meets the requirements. Form details about the requirements, see ServerSideProcessing.
+It doesn't rely on any specific server-side technology and third-party plugin-in such as ActiveX and Flash, so can be used with any server-side technology supporting asynchronous processing as long as the server meets the requirements depending on the protocol. For details about the requirements, see ServerSideProcessing.
 
-As the Stream constructor is not exposed, use {{{jQuery.stream}}} instead.
+<h3>Two-way communication over !WebSocket</h3>
+Stream transparently wraps !WebSocket instance. 
 
-Stream supports !WebSocket by simply wrapping its instance and HTTP Streaming by choosing proper transport according to browser and using it to communicate. The paragraphs below describe the streaming over HTTP in more detail.
+If the stream receives a non-string data via {{{send}}} method, the stream converts it into a query string by using {{{jQuery.param}}} and transmits it to the server. In the future, this feature will be changed to consider binary data.
 
-<h3>The !WebSocket API where Stream Object bases</h3>
+<h3>Two-way communication over HTTP</h3>
+Stream performs HTTP Streaming by choosing proper transport according to browser and two-way communication by simulating full duplex socket under customizable interaction rules.
 
-[http://www.w3.org/TR/2011/WD-websockets-20110419/ W3C Working Draft 19 April 2011]
+<h4>Transport</h4>
 
-<h3>Open</h3>
+When a stream instance is created, the chosen transport according to the browser sends a GET request which will be a one-way socket receiving a data from a server in real-time and deals with changes in that request's response.
 
-When the constructor is called, it sends a GET request which will be a one-way socket receiving a data from a server in real-time. Since the timestamp parameter ({{{_}}}) is always included in the request URL in order to prevent caching, the server doesn't need to configure it. Depending on the browser, the following transports are used to establish a stream connection.
+ * *XMLHttpRequest* - For modern browsers except Internet Explorer. but in the case of Opera, it polls the response text manually using {{{setTimeout}}}.
 
-*XMLHttpRequest* - For modern browsers except Internet Explorer. but in the case of Opera, it polls the response text manually using {{{setTimeout}}}.
+ * *Enhanced Hidden Iframe* - For Internet Explorer. It's different from the traditional way of fetching response. It polls the response text manually using {{{setTimeout}}} instead of requiring the server to print {{{script}}} tags. By doing this, you can simply print response and don't need to consider user agent. The element containing the response is emptied every time that the response fragment is handled, so there is no memory accumulation.
 
-*Enhanced Hidden Iframe* - For Internet Explorer. It's different from the traditional way of fetching response. It polls the response text manually using {{{setTimeout}}} instead of requiring the server to print {{{script}}} tags. By doing this, you can simply print response and don't need to consider user agent. The element containing the response is emptied every time that the response fragment is handled, so there is no memory accumulation. For this reason, the {{{Content-Type}}} of the response header must be set to {{{text/plain}}}, not {{{text/html}}}.
+ * *XDomainRequest* - Optionally available in Internet Explorer 8+. See [http://blogs.msdn.com/b/ieinternals/archive/2010/04/06/comet-streaming-in-internet-explorer-with-xmlhttprequest-and-xdomainrequest.aspx COMET Streaming in Internet Explorer] and [http://msdn.microsoft.com/en-us/library/cc288060%28VS.85%29.aspx XDomainRequest Object (MSDN)]. For security reasons, XDomainRequest excludes cookies when sending a request, so in most cases session state is not maintained. Therefore, as of jQuery Stream 1.1.1, Hidden Iframe replaces XDomainRequest. Since the performance of XDomainRequest, of course, is far better than Iframe, it is recommended to use XDomainRequest if possible. The previous problem can be solved by rewriting url to contain the session id. How to rewrite url is depending on the server-side technology: For details, see [http://stackoverflow.com/questions/6453779/maintaining-session-by-rewriting-url my question and answer] on stackoverflow.
 
+<h4>Interaction</h4>
 
-*XDomainRequest* - Optionally available in Internet Explorer 8+. See [http://blogs.msdn.com/b/ieinternals/archive/2010/04/06/comet-streaming-in-internet-explorer-with-xmlhttprequest-and-xdomainrequest.aspx COMET Streaming in Internet Explorer] and [http://msdn.microsoft.com/en-us/library/cc288060%28VS.85%29.aspx XDomainRequest Object (MSDN)]. it requires padding to enable streaming and an {{{Access-Control-Allow-Origin}}} response header. For security reasons, XDomainRequest excludes cookies when sending a request, so in most cases session state is not maintained. Therefore, as of jQuery Stream 1.1.1, Hidden Iframe replaces XDomainRequest. Since the performance of XDomainRequest, of course, is far better than Hidden Iframe, it is recommended to use XDomainRequest if possible. The previous problem can be solved by rewriting url to contain the session id. How to rewrite url is depending on the server-side technology: For details, see [http://stackoverflow.com/questions/6453779/maintaining-session-by-rewriting-url my question] on stackoverflow.
+Two-way communication is not possible without specific rules, because HTTP Streaming is one-way.
 
-The transport is chosen automatically according to the user's browser, and changing it is not allowed.
+To enable it, jQuery Stream uses internally the id and the metadata by default. The id is the unique identifier of the stream within the server, and should be generated by the server at the top of the GET request's response. The metadata is a series of the request parameters starting with {{{metadata.}}} and included in request body to inform the server of additional data needed by server-side processing. It includes id, type and so on. The following list enumerates all kinds of request type.
 
-<h3>Sending data</h3>
+ * *send* - Caused by calling {{{send}}} method.
+ * *close* - Caused by calling {{{close}}} method, and notify the server because connection remains still open after aborting it in client-side.
 
-Because HTTP Streaming is one-way, it simulates a way of transmitting data of full duplex socket like the !WebSocket by performing POST ajax request. The metadata is a series of the parameters starting with {{{metadata.}}} and included in request body to inform the server of additional data needed by server-side processing. So, following metadata entities are always added to request body.
-
-*metadata.id* - stream identifier.
-
-*metadata.type* - The purpose of request. In most cases, the value is {{{send}}} except a special case such as {{{close}}}.
-
-<h3>Close</h3>
-
-As mentioned above, because HTTP Streaming is one-way, streaming connection remains still open after aborting it in client-side. Therefore, when closing stream jQuery Stream sends a POST request whose metadata type is {{{close}}}.
+As of 1.2, above concepts and response format can be completely reimplemented if needed. If you have to integrate with the specific comet framework or you can't change server-side implementation, this feature will be very helpful.
 
 ===.url===
 {{{String url}}}
