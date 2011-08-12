@@ -1,0 +1,47 @@
+<web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" version="3.0">
+
+	<servlet>
+		<servlet-name>Chat</servlet-name>
+		<servlet-class>flowersinthesand.example.ChatServlet</servlet-class>
+		<async-supported>true</async-supported>
+	</servlet>
+
+	<servlet>
+		<servlet-name>HttpChat</servlet-name>
+		<servlet-class>flowersinthesand.example.HttpChatServlet</servlet-class>
+		<async-supported>true</async-supported>
+	</servlet>
+	
+	<servlet>
+		<servlet-name>Echo</servlet-name>
+		<servlet-class>flowersinthesand.example.EchoServlet</servlet-class>
+		<async-supported>true</async-supported>
+	</servlet>
+	
+	<servlet>
+		<servlet-name>TestStream</servlet-name>
+		<servlet-class>flowersinthesand.test.StreamServlet</servlet-class>
+		<async-supported>true</async-supported>
+	</servlet>
+	
+	<servlet-mapping>
+		<servlet-name>Chat</servlet-name>
+		<url-pattern>/example/chat</url-pattern>
+	</servlet-mapping>
+	
+	<servlet-mapping>
+		<servlet-name>HttpChat</servlet-name>
+		<url-pattern>/example/httpchat</url-pattern>
+	</servlet-mapping>
+
+	<servlet-mapping>
+		<servlet-name>Echo</servlet-name>
+		<url-pattern>/example/echo</url-pattern>
+	</servlet-mapping>
+	
+	<servlet-mapping>
+		<servlet-name>TestStream</servlet-name>
+		<url-pattern>/test/stream</url-pattern>
+	</servlet-mapping>
+
+</web-app>
