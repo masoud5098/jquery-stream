@@ -14,13 +14,12 @@
 		};
 				
 		$(function() {
-			
 			$.stream("chat", {
 				dataType: "json",
 				context: $("#content")[0],
-				open: function() {
+				open: function(event, stream) {
 					$("#editor .message").removeAttr("disabled").focus();
-					$.stream().send({username: chat.username, message: "Hello"});
+					stream.send({username: chat.username, message: "Hello"});
 				},
 				message: function(event) {
 					if (chat.lastUsername !== event.data.username) {
@@ -47,13 +46,9 @@
 			});
 			
 			$(window).resize(function() {
-				$("#content")
-				.height($(window).height() - $("#editor").outerHeight(true) - 15)
-				.each(function() {
-					this.scrollTop = this.scrollHeight;
-				});
+				var content = $("#content").height($(window).height() - $("#editor").outerHeight(true) - 15)[0];
+				content.scrollTop = content.scrollHeight;
 			}).resize();
-			
 		});
 		</script>
 		<style>
