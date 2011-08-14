@@ -4,7 +4,7 @@
 = Chat Example =
 <wiki:toc max_depth="3" />
 
-A simple chat application over HTTP and !WebSocket with jQuery Stream and various server side technologies. The chat client is pure HTML web page and named {{{index.html}}}. jQuery 1.5.0 and jQuery Stream 1.2 are used by default.
+A simple chat application over HTTP and !WebSocket with jQuery Stream and various server side technologies. The chat client is pure HTML web page and named [http://code.google.com/p/jquery-stream/source/browse/sub-projects/jquery-stream-servlet/trunk/src/main/webapp/index.html index.html]. jQuery 1.5.0 and jQuery Stream 1.2 are used by default.
 
 I strongly recommend you to read ServerSideProcessing wiki before browsing server-side source.
 
