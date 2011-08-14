@@ -15,7 +15,7 @@ $.stream.setup({
 	// and sets 'Access-Control-Allow-Origin' header to '*' unless 'enableAccessControl' option is not false
 	enableXDR: true,
 	
-	// Atmosphere always prints junk padding wisely and it end with <!-- EOD -->
+	// Atmosphere always prints junk padding ending with <!-- EOD --> wisely
 	// and there is no identifier concept
 	handleOpen: function(text, message) {
 		// 'Content-Type' header of the response must be set to 'text/plain'
@@ -29,7 +29,7 @@ $.stream.setup({
 	
 	// Atmosphere doesn't need metadata
 	handleSend: function(type) {
-		// Because all except send-type request will be canceled
+		// All except send-type request will be canceled
 		if (type !== "send") {
 			return false;
 		}
