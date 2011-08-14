@@ -1,5 +1,6 @@
-#summary Two-Way Communication Example between Web Page Using jQuery Stream and WebSocket/HTTP Echo Server
-#labels Featured
+#summary Echo Example
+
+*Please, see ChatExample for practical use. This wiki will not be updated.*
 
 = Echo Example =
 <wiki:toc max_depth="3" />
