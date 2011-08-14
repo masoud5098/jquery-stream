@@ -18,6 +18,7 @@ $.stream.setup({
 	// Atmosphere always prints junk padding wisely and it end with <!-- EOD -->
 	// and there is no identifier concept
 	handleOpen: function(text, message) {
+		// 'Content-Type' header of the response must be set to 'text/plain'
 		// message.index = text.indexOf("<!-- EOD -->") + "<!-- EOD -->".length;
 		message.index = text.indexOf("<!-- EOD -->") + 12;
 	},
