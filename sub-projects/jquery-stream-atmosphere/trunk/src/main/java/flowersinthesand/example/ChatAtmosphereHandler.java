@@ -39,6 +39,10 @@ public class ChatAtmosphereHandler implements
 
 	public void onStateChange(AtmosphereResourceEvent<HttpServletRequest, HttpServletResponse> event)
 			throws IOException {
+		if (event.getMessage() == null) {
+			return;
+		}
+
 		sendMessage(event.getResource().getResponse().getWriter(), event.getMessage().toString());
 	}
 
