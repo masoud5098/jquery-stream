@@ -51,6 +51,7 @@ Servlet 3.0 (JSR 351) is a specification that is part of the Java EE 6 technolog
 
  * [http://code.google.com/p/jquery-stream/source/browse/sub-projects/jquery-stream-atmosphere/trunk/src/main/java/flowersinthesand/example/ChatAtmosphereHandler.java ChatAtmosphereHandler.java] - POJO Atmosphere handler.
  * [http://code.google.com/p/jquery-stream/source/browse/sub-projects/jquery-stream-atmosphere/trunk/src/main/webapp/jquery.stream.atmosphere.js jquery.stream.atmosphere.js] - jQuery Stream plugin for Atmosphere.
+ * [http://code.google.com/p/jquery-stream/source/browse/sub-projects/jquery-stream-atmosphere/trunk/src/main/webapp/index.html index.html] - Chat client using jQuery Stream plugin for Atmosphere.
 
 *Note*
 
