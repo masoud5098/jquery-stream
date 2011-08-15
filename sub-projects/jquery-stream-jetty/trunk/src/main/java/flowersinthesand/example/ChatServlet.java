@@ -25,6 +25,8 @@ import org.eclipse.jetty.websocket.WebSocketServlet;
 
 import com.google.gson.Gson;
 
+// Jetty 8.0.0 M3 does not seem to support new annotations.
+// @WebServlet(urlPatterns = "/chat", asyncSupported = true)
 public class ChatServlet extends WebSocketServlet {
 
 	private static final long serialVersionUID = 4805728426990609124L;
@@ -34,10 +36,12 @@ public class ChatServlet extends WebSocketServlet {
 	private BlockingQueue<String> messages = new LinkedBlockingQueue<String>();
 	private Thread notifier = new Thread(new Runnable() {
 		public void run() {
-			boolean done = false;
-			while (!done) {
+			while (true) {
 				try {
+					// Waits until a message arrives
 					String message = messages.take();
+
+					// Sends the message to all the AsyncContext's response
 					for (AsyncContext asyncContext : asyncContexts.values()) {
 						try {
 							sendMessage(asyncContext.getResponse().getWriter(), message);
@@ -45,6 +49,8 @@ public class ChatServlet extends WebSocketServlet {
 							asyncContexts.values().remove(asyncContext);
 						}
 					}
+
+					// Sends the message to all the WebSocket's connection
 					for (ChatWebSocket webSocket : webSockets) {
 						try {
 							webSocket.connection.sendMessage(message);
@@ -53,13 +59,14 @@ public class ChatServlet extends WebSocketServlet {
 						}
 					}
 				} catch (InterruptedException e) {
-					done = true;
+					break;
 				}
 			}
 		}
 	});
 
 	private void sendMessage(PrintWriter writer, String message) throws IOException {
+		// default message format is message-size ; message-data ;
 		writer.print(message.length());
 		writer.print(";");
 		writer.print(message);
@@ -73,20 +80,26 @@ public class ChatServlet extends WebSocketServlet {
 		notifier.start();
 	}
 
+	// GET method is used to establish a stream connection
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
+
+		// Content-Type header
+		response.setContentType("text/plain");
 		response.setCharacterEncoding("utf-8");
 
-		response.setContentType("text/plain");
+		// Access-Control-Allow-Origin header
 		response.setHeader("Access-Control-Allow-Origin", "*");
 
 		PrintWriter writer = response.getWriter();
 
+		// Id
 		final String id = UUID.randomUUID().toString();
 		writer.print(id);
 		writer.print(';');
 
+		// Padding
 		for (int i = 0; i < 1024; i++) {
 			writer.print(' ');
 		}
@@ -94,7 +107,6 @@ public class ChatServlet extends WebSocketServlet {
 		writer.flush();
 
 		final AsyncContext ac = request.startAsync();
-		ac.setTimeout(5 * 60 * 1000);
 		ac.addListener(new AsyncListener() {
 			public void onComplete(AsyncEvent event) throws IOException {
 				asyncContexts.remove(id);
@@ -115,6 +127,7 @@ public class ChatServlet extends WebSocketServlet {
 		asyncContexts.put(id, ac);
 	}
 
+	// POST method is used to communicate with the server
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
@@ -125,11 +138,13 @@ public class ChatServlet extends WebSocketServlet {
 			return;
 		}
 
+		// close-request
 		if ("close".equals(request.getParameter("metadata.type"))) {
 			ac.complete();
 			return;
 		}
 
+		// send-request
 		Map<String, String> data = new LinkedHashMap<String, String>();
 		data.put("username", request.getParameter("username"));
 		data.put("message", request.getParameter("message"));
@@ -163,6 +178,7 @@ public class ChatServlet extends WebSocketServlet {
 
 		@Override
 		public void onMessage(String queryString) {
+			// Parses query string
 			UrlEncoded parameters = new UrlEncoded(queryString);
 
 			Map<String, String> data = new LinkedHashMap<String, String>();
