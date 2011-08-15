@@ -22,17 +22,21 @@ public class ChatAtmosphereHandler implements
 		HttpServletRequest request = resource.getRequest();
 		HttpServletResponse response = resource.getResponse();
 
-		response.setContentType("text/plain");
 		response.setCharacterEncoding("utf-8");
 
+		// GET method is used to establish a stream connection
 		if ("GET".equals(request.getMethod())) {
+			// Content-Type header
+			response.setContentType("text/plain");
 			resource.suspend();
 
+		// POST method is used to communicate with the server
 		} else if ("POST".equals(request.getMethod())) {
 			Map<String, String> data = new LinkedHashMap<String, String>();
 			data.put("username", request.getParameter("username"));
 			data.put("message", request.getParameter("message"));
 
+			// Broadcasts a message
 			resource.getBroadcaster().broadcast(new Gson().toJson(data));
 		}
 	}
@@ -47,6 +51,7 @@ public class ChatAtmosphereHandler implements
 	}
 
 	private void sendMessage(PrintWriter writer, String message) throws IOException {
+		// default message format is message-size ; message-data ;
 		writer.print(message.length());
 		writer.print(";");
 		writer.print(message);
