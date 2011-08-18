@@ -502,6 +502,19 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 				}
 			});
 		});
+		
+		asyncTest("text/html with comment padding", function() {
+			$.stream("stream", {
+				openData: {
+					htmlContent: true,
+					onlyCommentPadding: true
+				},
+				open: function() {
+					ok(true);
+					start();
+				}
+			});
+		});
 	}
 	
 });

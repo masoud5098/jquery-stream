@@ -47,13 +47,22 @@ public class StreamServlet extends WebSocketServlet {
 		final boolean differentFormat = Boolean.valueOf(request.getParameter("differentFormat"));
 		final String id = UUID.randomUUID().toString();
 		final PrintWriter writer = response.getWriter();
-		writer.print(id);
-		writer.print(differentFormat ? "\r\n" : ";");
 
-		for (int i = 0; i < 1024; i++) {
-			writer.print(' ');
+		if (Boolean.valueOf(request.getParameter("onlyCommentPadding"))) {
+			for (int i = 0; i < 10; i++) {
+				writer.println("<!--                                                           "
+						+ "                                                                    "
+						+ "                                                                 -->");
+			}
+		} else {
+			writer.print(id);
+			writer.print(differentFormat ? "\r\n" : ";");
+			for (int i = 0; i < 1024; i++) {
+				writer.print(' ');
+			}
+			writer.print(differentFormat ? "\r\n" : ";");
 		}
-		writer.print(differentFormat ? "\r\n" : ";");
+
 		writer.flush();
 
 		final AsyncContext ac = request.startAsync();

@@ -549,7 +549,7 @@
 					var cdoc = iframe.contentDocument || iframe.contentWindow.document;
 
 					stop = iterate(function() {
-						if (!cdoc.documentElement) {
+						if (!cdoc.firstChild) {
 							return;
 						}
 						
@@ -563,7 +563,7 @@
 							}
 						}
 						
-						var response = cdoc.body.lastChild,
+						var response = cdoc.body ? cdoc.body.lastChild : cdoc,
 							readResponse = function() {
 								// Clones the element not to disturb the original one
 								var clone = response.cloneNode(true);
@@ -580,7 +580,7 @@
 						if (!$.nodeName(response, "pre")) {
 							// Injects a plaintext element which renders text without interpreting the HTML and cannot be stopped
 							// it is deprecated in HTML5, but still works
-							var head = cdoc.head || cdoc.getElementsByTagName("head")[0] || cdoc.documentElement,
+							var head = cdoc.head || cdoc.getElementsByTagName("head")[0] || cdoc.documentElement || cdoc,
 								script = cdoc.createElement("script");
 							
 							script.text = "document.write('<plaintext>')";
