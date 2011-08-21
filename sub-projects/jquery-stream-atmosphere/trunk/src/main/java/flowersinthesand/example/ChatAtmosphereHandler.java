@@ -22,6 +22,7 @@ public class ChatAtmosphereHandler implements
 		HttpServletRequest request = resource.getRequest();
 		HttpServletResponse response = resource.getResponse();
 
+		request.setCharacterEncoding("utf-8");
 		response.setCharacterEncoding("utf-8");
 
 		// GET method is used to establish a stream connection
