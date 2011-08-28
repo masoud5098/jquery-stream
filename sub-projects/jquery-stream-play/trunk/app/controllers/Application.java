@@ -29,9 +29,6 @@ public class Application extends Controller {
 		// Content-Type header
 		response.contentType = "text/plain";
 
-		// Access-Control-Allow-Origin header
-		response.accessControl("*");
-
 		response.writeChunk(
 			// Id
 			Codec.UUID() + ";" +
