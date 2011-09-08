@@ -522,7 +522,7 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 			$.stream("stream", {
 				openData: {invalidOpen: true},
 				close: function(event) {
-					ok(new Date().getTime() - ts < 300);
+					ok(new Date().getTime() - ts < 3000);
 					start();
 				}
 			});
@@ -536,7 +536,7 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 					ok(true);
 				},
 				close: function() {
-					ok(new Date().getTime() - ts < 300);
+					ok(new Date().getTime() - ts < 3000);
 					start();
 				}
 			});
@@ -550,7 +550,7 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 					ok(true);
 				},
 				close: function() {
-					ok(new Date().getTime() - ts < 300);
+					ok(new Date().getTime() - ts < 3000);
 					start();
 				}
 			});
