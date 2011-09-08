@@ -509,8 +509,48 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 					htmlContent: true,
 					onlyCommentPadding: true
 				},
+				handleOpen: $.noop,
 				open: function() {
 					ok(true);
+					start();
+				}
+			});
+		});
+		
+		asyncTest("should close connection - invalid open", function() {
+			var ts = new Date().getTime();
+			$.stream("stream", {
+				openData: {invalidOpen: true},
+				close: function(event) {
+					ok(new Date().getTime() - ts < 300);
+					start();
+				}
+			});
+		});
+		
+		asyncTest("should close connection - invalid message with NaN size", function() {
+			var ts = new Date().getTime();
+			$.stream("stream", {
+				openData: {invalidMessage1: true},
+				open: function() {
+					ok(true);
+				},
+				close: function() {
+					ok(new Date().getTime() - ts < 300);
+					start();
+				}
+			});
+		});
+		
+		asyncTest("should close connection - invalid message with wrong size", function() {
+			var ts = new Date().getTime();
+			$.stream("stream", {
+				openData: {invalidMessage2: true},
+				open: function() {
+					ok(true);
+				},
+				close: function() {
+					ok(new Date().getTime() - ts < 300);
 					start();
 				}
 			});

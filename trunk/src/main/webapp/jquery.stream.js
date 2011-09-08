@@ -224,7 +224,7 @@
 					trigger(stream, event);
 
 					// Reconnect?
-					if (stream.options.reconnect && readyState !== 0) {
+					if (stream.options.reconnect && !readyState) {
 						$.stream(stream.url, stream.options);
 					}
 				}
@@ -288,10 +288,18 @@
 				// The top of the response is made up of the id and padding
 				// optional identifier within the server
 				stream.id = text.substring(0, text.indexOf(";"));
+				
 				// message.index = text.indexOf(";", stream.id.length + ";".length) + ";".length;
 				message.index = text.indexOf(";", stream.id.length + 1) + 1;
+				
+				// The text must contain id;padding;
+				if (text.charAt(stream.id.length) !== ";" || !message.index) {
+					// TODO stream.close(code, reason);
+					stream.close();
+					return false;
+				}
 			};
-			handleMessage = stream.options.handleMessage || function(text, message) {
+			handleMessage = stream.options.handleMessage || function(text, message, stream) {
 				// Response could contain a single message, multiple messages or a fragment of a message
 				// default message format is message-size ; message-data ;
 				if (message.size == null) {
@@ -302,7 +310,15 @@
 					}
 					
 					message.size = +text.substring(message.index, sizeEnd);
-					// index: sizeEnd + ";".length,
+					
+					// The message size must be a positive number
+					if (isNaN(message.size) || message.size < 0) {
+						// TODO stream.close(code, reason);
+						stream.close();
+						return false;
+					}
+					
+					// message.index = sizeEnd + ";".length;
 					message.index = sizeEnd + 1;
 				}
 				
@@ -310,19 +326,24 @@
 				message.data += data;
 				message.index += data.length;
 
-				// Has stream message been completed?
-				if (message.size !== message.data.length) {
+				// Has this message been completed?
+				if (message.data.length < message.size) {
 					return false;
 				}
-				
+
 				// Checks a semicolon of data part
-				var dataEnd = text.indexOf(";", message.index);
-				if (dataEnd < 0) {
+				// var endChar = text.substr(message.index, ";".length);
+				var endChar = text.charAt(message.index);
+				if (!endChar) {
+					return false;
+				} else if (endChar !== ";") {
+					// TODO stream.close(code, reason);
+					stream.close();
 					return false;
 				}
 				
-				// message.index = dataEnd + ";".length;
-				message.index = dataEnd + 1;
+				// message.index = message.index + ";".length;
+				message.index++;
 				
 				// Completes parsing
 				delete message.size;
