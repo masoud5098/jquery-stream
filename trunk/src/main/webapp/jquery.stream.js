@@ -14,8 +14,8 @@
 	var // Stream object instances
 		instances = {},
 	
-		// Streaming agents
-		agents = {},
+		// Constructors
+		constructors = {},
 	
 		// HTTP Streaming transports
 		transports = {},
@@ -73,9 +73,8 @@
 				
 			},
 			match = /^(http|ws)s?:/.exec(stream.url),
-			open = function() {
-				// Delegates open process
-				agents[stream.options.type](stream);
+			construct = function() {
+				constructors[stream.options.type](stream);
 			};
 		
 		// Stream type
@@ -96,16 +95,16 @@
 		
 		// Deals with the throbber of doom
 		if (stream.options.type === "ws" || !throbber) {
-			open();
+			construct();
 		} else {
 			switch (stream.options.throbber.type || stream.options.throbber) {
 			case "lazy":
 				$(window).load(function() {
-					setTimeout(open, stream.options.throbber.delay || 50);
+					setTimeout(construct, stream.options.throbber.delay || 50);
 				});
 				break;
 			case "reconnect":
-				open();
+				construct();
 				$(window).load(function() {
 					if (stream.readyState === 0) {
 						stream.options.open.push(function() {
@@ -177,23 +176,21 @@
 				json: $.parseJSON, 
 				xml: $.parseXML
 			}
-			// Additional parameters for GET request
 			// openData: null,
-			// WebSocket constructor argument
 			// protocols: null,
-			// XDomainRequest transport
 			// enableXDR: false,
 			// rewriteURL: null
-			// Polling interval
 			// operaInterval: 0
-			// iframeInterval: 0
+			// iframeInterval: 0,
+			// transport: null,
+			// transports: null,
 		}
 	
 	});
 	
-	$.extend(agents, {
+	$.extend(constructors, {
 
-		// WebSocket wrapper
+		// WebSocket
 		ws: function(stream) {
 			if (!window.WebSocket) {
 				return;
@@ -249,9 +246,10 @@
 			});
 		},
 		
-		// HTTP Streaming
+		// HTTP
 		http: function(stream) {
 			var // Transport
+				transportName,
 				transportFn,
 				transport,
 				// Low-level request and response handler
@@ -271,17 +269,94 @@
 				};
 			
 			// Chooses a proper transport
-			transportFn = transports[
-				// xdr
-				stream.options.enableXDR && window.XDomainRequest ? "xdr" :
-				// iframe
-				window.ActiveXObject ? "iframe" :
-				// xhr
-				window.XMLHttpRequest ? "xhr" : null];
+			// the default one is streaming transport
+			transportName = 
+				stream.options.enableXDR && window.XDomainRequest ? "xdr" : 
+				window.ActiveXObject ? "iframe" : 
+				window.XMLHttpRequest ? "xhr" : null;
+			transportName = 
+				!stream.options.transport ?
+					transportName :
+					!$.isFunction(stream.options.transport) ? 
+						stream.options.transport : 
+						stream.options.transport(transportName, stream);
 			
+			transportFn = stream.options.transports && stream.options.transports[transportName] || transports[transportName];
 			if (!transportFn) {
 				return;
 			}
+
+			transport = transportFn(stream, {
+				// Called when a chunk have been received
+				read: function(text) {
+					if (stream.readyState === 0) {
+						if (handleOpen(text, message, stream) === false) {
+							return;
+						}
+						
+						stream.readyState = 1;
+						trigger(stream, "open");
+					}
+					
+					for (;;) {
+						if (handleMessage(text, message, stream) === false) {
+							return;
+						}
+						
+						if (stream.readyState < 3) {
+							// Pseudo MessageEvent
+							trigger(stream, "message", {
+								// Converts the data type
+								data: stream.options.converters[stream.options.dataType](message.data), 
+								origin: "", 
+								lastEventId: "", 
+								source: null, 
+								ports: null
+							});
+						}
+						
+						// Resets the data
+						message.data = "";
+					}
+				},
+				// Called when a connection has been closed
+				close: function() {
+					stream.readyState = 3;
+					
+					// Pseudo CloseEvent
+					trigger(stream, "close", {
+						// Presumes that the stream closed cleanly
+						wasClean: true, 
+						code: null, 
+						reason: ""
+					});
+					
+					// Reconnect?
+					if (stream.options.reconnect) {
+						$.stream(stream.url, stream.options);
+					}
+				},
+				// Called when a connection has been closed due to an error
+				error: function() {
+					var readyState = stream.readyState;
+					stream.readyState = 3;
+					
+					// Prevents reconnecting
+					stream.options.reconnect = false;
+					
+					// If establishing a connection fails, fires the close event instead of the error event 
+					if (readyState === 0) {
+						// Pseudo CloseEvent
+						trigger(stream, "close", {
+							wasClean: false, 
+							code: null, 
+							reason: ""
+						});
+					} else {
+						trigger(stream, "error");
+					}
+				}
+			}, message);
 			
 			// Default response handler
 			handleOpen = stream.options.handleOpen || function(text, message, stream) {
@@ -300,7 +375,7 @@
 				}
 			};
 			handleMessage = stream.options.handleMessage || function(text, message, stream) {
-				// Response could contain a single message, multiple messages or a fragment of a message
+				// A chunk could contain a single message, multiple messages or a fragment of a message
 				// default message format is message-size ; message-data ;
 				if (message.size == null) {
 					// Checks a semicolon of size part
@@ -361,76 +436,6 @@
 					((typeof options.data === "string" ? options.data : param(options.data)) + "&" + param(metadata));
 			};
 			
-			transport = transportFn(stream, {
-				response: function(text) {
-					if (stream.readyState === 0) {
-						if (handleOpen(text, message, stream) === false) {
-							return;
-						}
-						
-						stream.readyState = 1;
-						trigger(stream, "open");
-					}
-					
-					for (;;) {
-						if (handleMessage(text, message, stream) === false) {
-							return;
-						}
-						
-						if (stream.readyState < 3) {
-							// Pseudo MessageEvent
-							trigger(stream, "message", {
-								// Converts the data type
-								data: stream.options.converters[stream.options.dataType](message.data), 
-								origin: "", 
-								lastEventId: "", 
-								source: null, 
-								ports: null
-							});
-						}
-						
-						// Resets the data
-						message.data = "";
-					}
-				},
-				close: function(isError) {
-					var readyState = stream.readyState;
-					stream.readyState = 3;
-					
-					if (isError) {
-						// Prevents reconnecting
-						stream.options.reconnect = false;
-						
-						// If establishing a connection fails, fires the close event instead of the error event 
-						if (readyState === 0) {
-							// Pseudo CloseEvent
-							trigger(stream, "close", {
-								wasClean: false, 
-								code: null, 
-								reason: ""
-							});
-						} else {
-							trigger(stream, "error");
-						}
-					} else {
-						// Pseudo CloseEvent
-						trigger(stream, "close", {
-							// Presumes that the stream closed cleanly
-							wasClean: true, 
-							code: null, 
-							reason: ""
-						});
-						
-						// Reconnect?
-						if (stream.options.reconnect) {
-							$.stream(stream.url, stream.options);
-						}
-					}
-				}
-			}, message);
-			
-			transport.open();
-						
 			// Overrides send and close
 			$.extend(stream, {
 				send: function(data) {
@@ -478,6 +483,9 @@
 					}
 				}
 			});
+			
+			// Delegates open
+			transport.open();
 		}
 		
 	});
@@ -485,7 +493,7 @@
 	$.extend(transports, {
 
 		// XMLHttpRequest: Modern browsers except Internet Explorer
-		xhr: function(stream, handler, message) {
+		xhr: function(stream, on, message) {
 			var stop,
 				polling, 
 				preStatus, 
@@ -499,7 +507,7 @@
 						return;
 					}
 					
-					handler.response(xhr.responseText);
+					on.read(xhr.responseText);
 					
 					// For Opera
 					if ($.browser.opera && !polling) {
@@ -511,7 +519,7 @@
 							}
 							
 							if (xhr.responseText.length > message.index) {
-								handler.response(xhr.responseText);
+								on.read(xhr.responseText);
 							}
 						}, stream.options.operaInterval);
 					}
@@ -520,7 +528,7 @@
 				case 4:
 					// HTTP status 0 could mean that the request is terminated by abort method
 					// but it's not error in Stream object
-					handler.close(xhr.status !== 200 && preStatus !== 200);
+					on[xhr.status !== 200 && preStatus !== 200 ? "error" : "close"]();
 					break;
 				}
 			};
@@ -545,13 +553,13 @@
 		},
 
 		// Hidden iframe: Internet Explorer
-		iframe: function(stream, handler, message) {
+		iframe: function(stream, on, message) {
 			var stop,
 				closed,
 				onload = function() {
 					if (!closed) {
 						closed = true;
-						handler.close();
+						on.close();
 					}
 				},
 				doc = new window.ActiveXObject("htmlfile");
@@ -579,7 +587,7 @@
 							try {
 								$.noop(cdoc.fileSize);
 							} catch(e) {
-								handler.close(true);
+								on.error();
 								return false;
 							}
 						}
@@ -614,13 +622,13 @@
 						}
 						
 						// Handles open event
-						handler.response(readResponse());
+						on.read(readResponse());
 						
 						// Handles message and close event
 						stop = iterate(function() {
 							var text = readResponse();
 							if (text.length > message.index) {
-								handler.response(text);
+								on.read(text);
 								
 								// Empties response every time that it is handled
 								response.innerText = "";
@@ -648,7 +656,7 @@
 		},
 
 		// XDomainRequest: Optionally Internet Explorer 8+
-		xdr: function(stream, handler) {
+		xdr: function(stream, on) {
 			var xdr = new window.XDomainRequest(),
 				rewriteURL = stream.options.rewriteURL || function(url) {
 					// Maintaining session by rewriting URL
@@ -675,15 +683,15 @@
 			
 			// Handles open and message event
 			xdr.onprogress = function() {
-				handler.response(xdr.responseText);
+				on.read(xdr.responseText);
 			};
 			// Handles error event
 			xdr.onerror = function() {
-				handler.close(true);
+				on.error();
 			};
 			// Handles close event
 			var onload = xdr.onload = function() {
-				handler.close();
+				on.close();
 			};
 			
 			return {

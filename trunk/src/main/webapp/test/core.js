@@ -118,6 +118,73 @@ asyncTest("Only local stream event handlers", 3, function() {
 	});
 });
 
+test("Choosing transport", 4, function() {
+	$.stream.setup({
+		transports: {
+			mock: function() {
+				ok(true);
+				
+				return {
+					open: function() {},
+					close: function() {}
+				};
+			}
+		}
+	});
+	
+	$.stream("1", {
+		transport: "mock"
+	});
+	$.stream("2", {
+		transport: function(defaults, stream) {
+			equal(defaults, stream.options.enableXDR && window.XDomainRequest ? "xdr" : 
+				window.ActiveXObject ? "iframe" : 
+				window.XMLHttpRequest ? "xhr" : null);
+			equal(stream.url, "2");
+			
+			return "mock";
+		}
+	});
+});
+
+asyncTest("Adding transport", function() {
+	var closed = false;
+	$.stream.setup({
+		transports: {
+			mock: function(stream, on) {
+				ok(true);
+				
+				return {
+					open: function() {
+						var text = "";
+						on.read(text += "id;padding;");
+						on.read(text += "5;Hello;");
+					},
+					close: function() {
+						closed = true;
+						on.close();
+					}
+				};
+			}
+		}
+	});
+	
+	$.stream("1", {
+		transport: "mock",
+		open: function(event, stream) {
+			equal(stream.id, "id");
+		},
+		message: function(event, stream) {
+			equal(event.data, "Hello");
+			stream.close();
+		},
+		close: function() {
+			ok(closed);
+			start();
+		}
+	});
+});
+
 $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 	
 	if (type === "ws" && !window.WebSocket) {
