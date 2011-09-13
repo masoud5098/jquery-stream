@@ -567,6 +567,9 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 							close: function() {}
 						};
 					}
+				},
+				handleSend: function() {
+					return false;
 				}
 			});
 			
@@ -604,6 +607,9 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 							}
 						};
 					}
+				},
+				handleSend: function() {
+					return false;
 				}
 			});
 			
@@ -611,6 +617,46 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 				transport: "mock",
 				open: function(event, stream) {
 					equal(stream.id, "id");
+				},
+				message: function(event, stream) {
+					equal(event.data, "Hello");
+					stream.close();
+				},
+				close: function() {
+					ok(closed);
+					start();
+				}
+			});
+		});
+		
+		asyncTest("Adding transport using on.open and on.message", function() {
+			var closed = false;
+			$.stream.setup({
+				transports: {
+					mock: function(stream, on) {
+						ok(true);
+						
+						return {
+							open: function() {
+								on.open();
+								on.message("Hello");
+							},
+							close: function() {
+								closed = true;
+								on.close();
+							}
+						};
+					}
+				},
+				handleSend: function() {
+					return false;
+				}
+			});
+			
+			$.stream("1", {
+				transport: "mock",
+				open: function(event, stream) {
+					ok(true);
 				},
 				message: function(event, stream) {
 					equal(event.data, "Hello");

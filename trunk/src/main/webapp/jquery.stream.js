@@ -252,21 +252,23 @@
 				transportName,
 				transportFn,
 				transport,
-				// Low-level request and response handler
+				// Listeners for transport,
+				on = {},
+				// Request and response handler
 				handleOpen,
 				handleMessage,
 				handleSend,
-				// Latch for AJAX
-				sending,
-				// Data queue
-				dataQueue = [],
-				// Helper object for parsing response
+				// Helper object for parsing chunks
 				message = {
 					// The index from which to start parsing
 					index: 0,
 					// The temporary data
 					data: ""
-				};
+				},
+				// Latch for AJAX
+				sending,
+				// Data queue
+				dataQueue = [];
 			
 			// Chooses a proper transport
 			// the default one is streaming transport
@@ -286,16 +288,15 @@
 				return;
 			}
 
-			transport = transportFn(stream, {
-				// Called when a chunk have been received
+			transport = transportFn(stream, $.extend(on, {
+				// Called when a chunk has been received
 				read: function(text) {
 					if (stream.readyState === 0) {
 						if (handleOpen(text, message, stream) === false) {
 							return;
 						}
 						
-						stream.readyState = 1;
-						trigger(stream, "open");
+						on.open();
 					}
 					
 					for (;;) {
@@ -303,20 +304,31 @@
 							return;
 						}
 						
-						if (stream.readyState < 3) {
-							// Pseudo MessageEvent
-							trigger(stream, "message", {
-								// Converts the data type
-								data: stream.options.converters[stream.options.dataType](message.data), 
-								origin: "", 
-								lastEventId: "", 
-								source: null, 
-								ports: null
-							});
-						}
+						on.message(message.data);
 						
 						// Resets the data
 						message.data = "";
+					}
+				},
+				// Called when a connection has been established
+				open: function() {
+					if (stream.readyState === 0) {
+						stream.readyState = 1;
+						trigger(stream, "open");
+					}
+				},
+				// Called when a complete message has been received
+				message: function(data) {
+					if (stream.readyState === 1 || stream.readyState === 2) {
+						// Pseudo MessageEvent
+						trigger(stream, "message", {
+							// Converts the data type
+							data: stream.options.converters[stream.options.dataType](data), 
+							origin: "", 
+							lastEventId: "", 
+							source: null, 
+							ports: null
+						});
 					}
 				},
 				// Called when a connection has been closed
@@ -360,7 +372,7 @@
 						}
 					}
 				}
-			}, message);
+			}), message);
 			
 			// Default response handler
 			handleOpen = stream.options.handleOpen || function(text, message, stream) {
