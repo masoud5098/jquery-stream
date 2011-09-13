@@ -321,39 +321,43 @@
 				},
 				// Called when a connection has been closed
 				close: function() {
-					stream.readyState = 3;
-					
-					// Pseudo CloseEvent
-					trigger(stream, "close", {
-						// Presumes that the stream closed cleanly
-						wasClean: true, 
-						code: null, 
-						reason: ""
-					});
-					
-					// Reconnect?
-					if (stream.options.reconnect) {
-						$.stream(stream.url, stream.options);
+					if (stream.readyState < 3) {
+						stream.readyState = 3;
+						
+						// Pseudo CloseEvent
+						trigger(stream, "close", {
+							// Presumes that the stream closed cleanly
+							wasClean: true, 
+							code: null, 
+							reason: ""
+						});
+						
+						// Reconnect?
+						if (stream.options.reconnect) {
+							$.stream(stream.url, stream.options);
+						}
 					}
 				},
 				// Called when a connection has been closed due to an error
 				error: function() {
 					var readyState = stream.readyState;
-					stream.readyState = 3;
-					
-					// Prevents reconnecting
-					stream.options.reconnect = false;
-					
-					// If establishing a connection fails, fires the close event instead of the error event 
-					if (readyState === 0) {
-						// Pseudo CloseEvent
-						trigger(stream, "close", {
-							wasClean: false, 
-							code: null, 
-							reason: ""
-						});
-					} else {
-						trigger(stream, "error");
+					if (readyState < 3) {
+						stream.readyState = 3;
+						
+						// Prevents reconnecting
+						stream.options.reconnect = false;
+						
+						// If establishing a connection fails, fires the close event instead of the error event 
+						if (readyState === 0) {
+							// Pseudo CloseEvent
+							trigger(stream, "close", {
+								wasClean: false, 
+								code: null, 
+								reason: ""
+							});
+						} else {
+							trigger(stream, "error");
+						}
 					}
 				}
 			}, message);
@@ -555,13 +559,6 @@
 		// Hidden iframe: Internet Explorer
 		iframe: function(stream, on, message) {
 			var stop,
-				closed,
-				onload = function() {
-					if (!closed) {
-						closed = true;
-						on.close();
-					}
-				},
 				doc = new window.ActiveXObject("htmlfile");
 			
 			doc.open();
@@ -636,7 +633,7 @@
 							}
 
 							if (cdoc.readyState === "complete") {
-								onload();
+								on.close();
 								return false;
 							}
 						}, stream.options.iframeInterval);
@@ -650,7 +647,7 @@
 					}
 					
 					doc.execCommand("Stop");
-					onload();
+					on.close();
 				}
 			};
 		},
@@ -686,13 +683,9 @@
 				on.read(xdr.responseText);
 			};
 			// Handles error event
-			xdr.onerror = function() {
-				on.error();
-			};
+			xdr.onerror = on.error;
 			// Handles close event
-			var onload = xdr.onload = function() {
-				on.close();
-			};
+			xdr.onload = on.close;
 			
 			return {
 				open: function() {
@@ -701,7 +694,7 @@
 				},
 				close: function() {
 					xdr.abort();
-					onload();
+					on.close();
 				}
 			};
 		}
