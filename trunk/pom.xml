@@ -112,19 +112,19 @@
 		<dependency>
 			<groupId>com.google.javascript</groupId>
 			<artifactId>closure-compiler</artifactId>
-			<version>r1043</version>
+			<version>r1352</version>
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-websocket</artifactId>
-			<version>8.0.0.M3</version>
-			<scope>provided</scope>
+			<version>8.0.1.v20110908</version>
+			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-util</artifactId>
-			<version>8.0.0.M3</version>
+			<version>8.0.1.v20110908</version>
 			<scope>runtime</scope>
 		</dependency>
 	</dependencies>
