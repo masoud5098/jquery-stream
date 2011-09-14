@@ -468,7 +468,10 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 				handleSend: function(type, options, stream) {
 					switch (type) {
 					case "close":
-						options.data = {"metadata.type": type, "metadata.id": stream.id};
+						options.headers = {
+							"x-jquery-stream-id": stream.id,
+							"x-jquery-stream-type": type
+						};
 						break;
 					default:
 						if (options.data.message % 2) {
@@ -476,7 +479,10 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 						}
 					
 						$.extend(true, options, {
-							data: {"metadata.type": type, "metadata.id": stream.id},
+							headers: {
+								"x-jquery-stream-id": stream.id,
+								"x-jquery-stream-type": type
+							},
 							success: function() {
 								ok(true);
 							}

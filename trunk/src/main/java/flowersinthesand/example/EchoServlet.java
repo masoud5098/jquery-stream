@@ -69,12 +69,12 @@ public class EchoServlet extends WebSocketServlet {
 			throws ServletException, IOException {
 		request.setCharacterEncoding("utf-8");
 
-		AsyncContext ac = asyncContexts.get(request.getParameter("metadata.id"));
+		AsyncContext ac = asyncContexts.get(request.getHeader("x-jquery-stream-id"));
 		if (ac == null) {
 			return;
 		}
 
-		if ("close".equals(request.getParameter("metadata.type"))) {
+		if ("close".equals(request.getHeader("x-jquery-stream-type"))) {
 			ac.complete();
 			return;
 		}

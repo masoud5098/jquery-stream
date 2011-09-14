@@ -442,14 +442,10 @@
 			
 			// Default request handler
 			handleSend = stream.options.handleSend || function(type, options, stream) {
-				var metadata = {"metadata.id": stream.id, "metadata.type": type};
-				
-				options.data = 
-					// Close
-					type === "close" ? param(metadata) :
-					// Send
-					// converts data if not already a string
-					((typeof options.data === "string" ? options.data : param(options.data)) + "&" + param(metadata));
+				options.headers = {
+					"x-jquery-stream-id": stream.id || "undefined",
+					"x-jquery-stream-type": type
+				};
 			};
 			
 			// Overrides send and close

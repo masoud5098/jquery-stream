@@ -135,8 +135,8 @@ public class ChatServlet extends WebSocketServlet {
 			throws ServletException, IOException {
 		request.setCharacterEncoding("utf-8");
 
-		if ("close".equals(request.getParameter("metadata.type"))) {
-			AsyncContext ac = asyncContexts.get(request.getParameter("metadata.id"));
+		if ("close".equals(request.getHeader("x-jquery-stream-type"))) {
+			AsyncContext ac = asyncContexts.get(request.getHeader("x-jquery-stream-id"));
 			if (ac != null) {
 				ac.complete();
 			}
