@@ -33,7 +33,6 @@
 	// Stream is based on The WebSocket API 
 	// W3C Working Draft 19 April 2011 - http://www.w3.org/TR/2011/WD-websockets-20110419/
 	$.stream = function(url, options) {
-		
 		// Returns the first Stream in the document
 		if (!arguments.length) {
 			for (var i in instances) {
@@ -45,91 +44,23 @@
 		
 		// Stream to which the specified url or alias is mapped
 		var instance = instances[url];
-		
 		if (!options) {
 			return instance || null;
 		} else if (instance && instance.readyState < 3) {
 			return instance;
 		}
+
+		// WebSocket or HTTP
+		var match = /^(http|ws)s?:/.exec(url);
+		options.type = match && match[1] || $.stream.options.type;
 		
-		var // Stream object
-			stream = {
-				
-				// URL to which to connect
-				url: url,
-				
-				// Merges options
-				options: $.stream.setup({}, options),
-				
-				// The state of stream
-				// 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
-				readyState: 0,
-				
-				// Fake send
-				send: function() {},
-				
-				// Fake close
-				close: function() {}
-				
-			},
-			match = /^(http|ws)s?:/.exec(stream.url),
-			construct = function() {
-				constructors[stream.options.type](stream);
-			};
-		
-		// Stream type
-		if (match) {
-			stream.options.type = match[1];
-		}
-		
-		// Makes arrays of event handlers
-		for (var i in {open: 1, message: 1, error: 1, close: 1}) {
-			stream.options[i] = $.makeArray(stream.options[i]); 
-		}
+		// Creates a Stream object
+		var stream = constructors[options.type](url, options);
 		
 		// The url and alias are a identifier of this instance within the document
-		instances[stream.url] = stream;
-		if (stream.options.alias) {
-			instances[stream.options.alias] = stream;
-		}
-		
-		// Deals with the throbber of doom
-		if (stream.options.type === "ws" || !throbber) {
-			construct();
-		} else {
-			switch (stream.options.throbber.type || stream.options.throbber) {
-			case "lazy":
-				$(window).load(function() {
-					setTimeout(construct, stream.options.throbber.delay || 50);
-				});
-				break;
-			case "reconnect":
-				construct();
-				$(window).load(function() {
-					if (stream.readyState === 0) {
-						stream.options.open.push(function() {
-							stream.options.open.pop();
-							setTimeout(reconnect, 10);
-						});
-					} else {
-						reconnect();
-					}
-					
-					function reconnect() {
-						stream.options.close.push(function() {
-							stream.options.close.pop();
-							setTimeout(function() {
-								$.stream(stream.url, stream.options);
-							}, stream.options.throbber.delay || 50);
-						});
-						
-						var reconn = stream.options.reconnect;
-						stream.close();
-						stream.options.reconnect = reconn;
-					}
-				});
-				break;
-			}
+		instances[url] = stream;
+		if (options.alias) {
+			instances[options.alias] = stream;
 		}
 		
 		return stream;
@@ -189,17 +120,44 @@
 	});
 	
 	$.extend(constructors, {
+		
+		// Base
+		stream: function(url, options) {
+			// Merges options
+			options = $.stream.setup({}, options);
+			
+			// Makes arrays of event handlers
+			for (var i in {open: 1, message: 1, error: 1, close: 1}) {
+				options[i] = $.makeArray(options[i]); 
+			}
+			
+			return {
+				// URL to which to connect
+				url: url,
+				// Stream options
+				options: options,
+				// The state of stream
+				// 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
+				readyState: 0,
+				// Fake send
+				send: function() {},
+				// Fake close
+				close: function() {}
+			};
+		},
 
 		// WebSocket
-		ws: function(stream) {
+		ws: function(url, options) {
+			// Base
+			var stream = constructors.stream(url, options);
 			if (!window.WebSocket) {
-				return;
+				return stream;
 			}
 			
 			var // Absolute WebSocket URL
-				url = prepareURL(getAbsoluteURL(stream.url).replace(/^http/, "ws"), stream.options.openData),
+				wsURL = prepareURL(getAbsoluteURL(stream.url).replace(/^http/, "ws"), stream.options.openData),
 				// WebSocket instance
-				ws = stream.options.protocols ? new window.WebSocket(url, stream.options.protocols) : new window.WebSocket(url);
+				ws = stream.options.protocols ? new window.WebSocket(wsURL, stream.options.protocols) : new window.WebSocket(wsURL);
 			
 			// WebSocket event handlers
 			$.extend(ws, {
@@ -222,13 +180,13 @@
 
 					// Reconnect?
 					if (stream.options.reconnect && !readyState) {
-						$.stream(stream.url, stream.options);
+						$.stream(url, options);
 					}
 				}
 			});
 			
 			// Overrides send and close
-			$.extend(stream, {
+			return $.extend(stream, {
 				send: function(data) {
 					if (stream.readyState === 0) {
 						$.error("INVALID_STATE_ERR: Stream not open");
@@ -247,8 +205,10 @@
 		},
 		
 		// HTTP
-		http: function(stream) {
-			var // Transport
+		http: function(url, options) {
+			var // Base
+				stream = constructors.stream(url, options),
+				// Transport
 				transportName,
 				transportFn,
 				transport,
@@ -285,7 +245,7 @@
 			
 			transportFn = stream.options.transports && stream.options.transports[transportName] || transports[transportName];
 			if (!transportFn) {
-				return;
+				return stream;
 			}
 
 			transport = transportFn(stream, $.extend(on, {
@@ -346,7 +306,7 @@
 						
 						// Reconnect?
 						if (stream.options.reconnect) {
-							$.stream(stream.url, stream.options);
+							$.stream(url, options);
 						}
 					}
 				},
@@ -495,9 +455,45 @@
 					}
 				}
 			});
+
+			// Deals with the throbber of doom
+			if (!throbber) {
+				transport.open();
+			} else {
+				switch (stream.options.throbber.type || stream.options.throbber) {
+				case "lazy":
+					$(window).load(function() {
+						setTimeout(transport.open, stream.options.throbber.delay || 50);
+					});
+					break;
+				case "reconnect":
+					transport.open();
+					$(window).load(function() {
+						if (stream.readyState === 0) {
+							stream.options.open.push(function() {
+								setTimeout(reconnect, 10);
+							});
+						} else {
+							reconnect();
+						}
+						
+						function reconnect() {
+							stream.options.close.push(function() {
+								setTimeout(function() {
+									$.stream(url, options);
+								}, stream.options.throbber.delay || 50);
+							});
+							
+							var reconn = stream.options.reconnect;
+							stream.close();
+							stream.options.reconnect = reconn;
+						}
+					});
+					break;
+				}
+			}
 			
-			// Delegates open
-			transport.open();
+			return stream;
 		}
 		
 	});
