@@ -522,45 +522,6 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 				}
 			});
 		});
-		
-		asyncTest("should close connection - invalid open", function() {
-			var ts = new Date().getTime();
-			$.stream("stream", {
-				openData: {invalidOpen: true},
-				close: function(event) {
-					ok(new Date().getTime() - ts < 3000);
-					start();
-				}
-			});
-		});
-		
-		asyncTest("should close connection - invalid message with NaN size", function() {
-			var ts = new Date().getTime();
-			$.stream("stream", {
-				openData: {invalidMessage1: true},
-				open: function() {
-					ok(true);
-				},
-				close: function() {
-					ok(new Date().getTime() - ts < 3000);
-					start();
-				}
-			});
-		});
-		
-		asyncTest("should close connection - invalid message with wrong size", function() {
-			var ts = new Date().getTime();
-			$.stream("stream", {
-				openData: {invalidMessage2: true},
-				open: function() {
-					ok(true);
-				},
-				close: function() {
-					ok(new Date().getTime() - ts < 3000);
-					start();
-				}
-			});
-		});
 
 		test("Choosing transport", 4, function() {
 			$.stream.setup({
@@ -672,6 +633,94 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 					ok(closed);
 					start();
 				}
+			});
+		});
+
+		asyncTest("Parsing message - invalid open", function() {
+			$.stream.setup({
+				transports: {
+					test: function(stream, on) {
+						return {
+							open: function() {
+								on.read("id;     ");
+							},
+							close: function() {
+								ok(true);
+								on.close();
+							}
+						};
+					}
+				},
+				handleSend: function() {
+					return false;
+				}
+			});
+			
+			$.stream("stream", {
+				transport: "test",
+				close: start
+			});
+		});
+		
+		asyncTest("Parsing message - invalid message with NaN size", function() {
+			$.stream.setup({
+				transports: {
+					test: function(stream, on) {
+						return {
+							open: function() {
+								var text = "";
+								on.read(text += "id;padding;");
+								on.read(text += "char;hello;");
+							},
+							close: function() {
+								ok(true);
+								on.close();
+							}
+						};
+					}
+				},
+				handleSend: function() {
+					return false;
+				}
+			});
+			
+			$.stream("stream", {
+				transport: "test",
+				open: function() {
+					ok(true);
+				},
+				close: start
+			});
+		});
+		
+		asyncTest("Parsing message - invalid message with wrong size", function() {
+			$.stream.setup({
+				transports: {
+					test: function(stream, on) {
+						return {
+							open: function() {
+								var text = "";
+								on.read(text += "id;padding;");								
+								on.read(text += "3;black;");
+							},
+							close: function() {
+								ok(true);
+								on.close();
+							}
+						};
+					}
+				},
+				handleSend: function() {
+					return false;
+				}
+			});
+			
+			$.stream("stream", {
+				transport: "test",
+				open: function() {
+					ok(true);
+				},
+				close: start
 			});
 		});
 	}
