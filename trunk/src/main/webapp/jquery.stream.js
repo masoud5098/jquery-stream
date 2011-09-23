@@ -148,17 +148,12 @@
 
 		// WebSocket
 		ws: function(url, options) {
-			
 			var // Base
 				stream = constructors.stream(url, options),
-				WebSocket = window.WebSocket || window.MozWebSocket;
-			
-			if (!WebSocket) {
-				return stream;
-			}
-			
-			var // Absolute WebSocket URL
+				// Absolute WebSocket URL
 				wsURL = prepareURL(getAbsoluteURL(stream.url).replace(/^http/, "ws"), stream.options.openData),
+				// WebSocket constructor
+				WebSocket = window.WebSocket || window.MozWebSocket,
 				// WebSocket instance
 				ws = stream.options.protocols ? new WebSocket(wsURL, stream.options.protocols) : new WebSocket(wsURL);
 			
@@ -245,12 +240,7 @@
 					!$.isFunction(stream.options.transport) ? 
 						stream.options.transport : 
 						stream.options.transport(transportName, stream);
-			
 			transportFn = stream.options.transports && stream.options.transports[transportName] || transports[transportName];
-			if (!transportFn) {
-				return stream;
-			}
-
 			transport = transportFn(stream, $.extend(on, {
 				// Called when a chunk has been received
 				read: function(text) {
