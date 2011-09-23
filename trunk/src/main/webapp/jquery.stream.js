@@ -52,7 +52,7 @@
 
 		// WebSocket or HTTP
 		var match = /^(http|ws)s?:/.exec(url);
-		options.type = match && match[1] || $.stream.options.type;
+		options.type = match && match[1] || options.type || $.stream.options.type;
 		
 		// Creates a Stream object
 		var stream = constructors[options.type](url, options);
