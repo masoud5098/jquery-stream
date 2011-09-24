@@ -131,19 +131,118 @@
 				options[i] = $.makeArray(options[i]); 
 			}
 			
-			return {
-				// URL to which to connect
-				url: url,
-				// Stream options
-				options: options,
-				// The state of stream
-				// 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
-				readyState: 0,
-				// Fake send
-				send: function() {},
-				// Fake close
-				close: function() {}
-			};
+			var // Stream object
+				stream = {
+					// URL to which to connect
+					url: url,
+					// Stream options
+					options: options,
+					// The state of stream
+					// 0: CONNECTING, 1: OPEN, 2: CLOSING, 3: CLOSED
+					readyState: 0,
+					// Fake send
+					send: function() {},
+					// Fake close
+					close: function() {},
+					// Event handlers
+					eventHandlers: {
+						// Called when a connection has been established
+						onopen: function(event) {
+							if (stream.readyState === 0) {
+								stream.readyState = 1;
+								trigger(event || "open");
+							}
+						},
+						// Called when a complete message has been received
+						onmessage: function(event) {
+							if (stream.readyState === 1 || stream.readyState === 2) {
+								if (event.type) {
+									trigger($.extend({}, event, {data: options.converters[options.dataType](event.data)}));
+								} else {
+									// Pseudo MessageEvent
+									trigger("message", {
+										// Converts the data type
+										data: options.converters[options.dataType](event.data), 
+										origin: "", 
+										lastEventId: "", 
+										source: null, 
+										ports: null
+									});
+								}
+							}
+						},
+						// Called when a connection has been closed
+						onclose: function(event) {
+							var readyState = stream.readyState; 
+							if (stream.readyState < 3) {
+								stream.readyState = 3;
+								
+								if (event) {
+									trigger(event);
+								} else {
+									// Pseudo CloseEvent
+									trigger("close", {
+										// Presumes that the stream closed cleanly
+										wasClean: true, 
+										code: null, 
+										reason: ""
+									});
+								}
+								
+								// Reconnect?
+								if (options.reconnect && readyState) {
+									$.stream(url, options);
+								}
+							}
+						},
+						// Called when a connection has been closed due to an error
+						onerror: function(event) {
+							var readyState = stream.readyState;
+							if (readyState < 3) {
+								stream.readyState = 3;
+								
+								// Prevents reconnecting
+								options.reconnect = false;
+								
+								if (event) {
+									trigger(event);
+								} else {
+									// If establishing a connection fails, fires the close event instead of the error event 
+									if (readyState === 0) {
+										// Pseudo CloseEvent
+										trigger("close", {
+											wasClean: false, 
+											code: null, 
+											reason: ""
+										});
+									} else {
+										trigger("error");
+									}
+								}
+							}
+						}
+					}
+				},
+				trigger = function(event, props) {
+					event = event.type ? 
+						event : 
+						$.extend($.Event(event), {bubbles: false, cancelable: false}, props);
+					
+					var handlers = options[event.type],
+						applyArgs = [event, stream];
+					
+					// Triggers local event handlers
+					for (var i = 0, length = handlers.length; i < length; i++) {
+						handlers[i].apply(options.context, applyArgs);
+					}
+
+					if (options.global) {
+						// Triggers global event handlers
+						$.event.trigger("stream" + event.type.substring(0, 1).toUpperCase() + event.type.substring(1), applyArgs);
+					}
+				};
+			
+			return stream;
 		},
 
 		// WebSocket
@@ -157,31 +256,8 @@
 				// WebSocket instance
 				ws = stream.options.protocols ? new WebSocket(wsURL, stream.options.protocols) : new WebSocket(wsURL);
 			
-			// WebSocket event handlers
-			$.extend(ws, {
-				onopen: function(event) {
-					stream.readyState = 1;
-					trigger(stream, event);
-				},
-				onmessage: function(event) {
-					trigger(stream, $.extend({}, event, {data: stream.options.converters[stream.options.dataType](event.data)}));
-				},
-				onerror: function(event) {
-					stream.options.reconnect = false;
-					trigger(stream, event);
-				},
-				onclose: function(event) {
-					var readyState = stream.readyState; 
-					
-					stream.readyState = 3;
-					trigger(stream, event);
-
-					// Reconnect?
-					if (stream.options.reconnect && !readyState) {
-						$.stream(url, options);
-					}
-				}
-			});
+			// Adds event handlers
+			$.extend(ws, stream.eventHandlers);
 			
 			// Overrides send and close
 			return $.extend(stream, {
@@ -210,8 +286,6 @@
 				transportName,
 				transportFn,
 				transport,
-				// Listeners for transport,
-				on = {},
 				// Request and response handler
 				handleOpen,
 				handleMessage,
@@ -241,15 +315,15 @@
 						stream.options.transport : 
 						stream.options.transport(transportName, stream);
 			transportFn = stream.options.transports && stream.options.transports[transportName] || transports[transportName];
-			transport = transportFn(stream, $.extend(on, {
+			transport = transportFn(stream, $.extend(stream.eventHandlers, {
 				// Called when a chunk has been received
-				read: function(text) {
+				onread: function(text) {
 					if (stream.readyState === 0) {
 						if (handleOpen(text, message, stream) === false) {
 							return;
 						}
 						
-						on.open();
+						stream.eventHandlers.onopen();
 					}
 					
 					for (;;) {
@@ -257,72 +331,10 @@
 							return;
 						}
 						
-						on.message(message.data);
+						stream.eventHandlers.onmessage({data: message.data});
 						
 						// Resets the data
 						message.data = "";
-					}
-				},
-				// Called when a connection has been established
-				open: function() {
-					if (stream.readyState === 0) {
-						stream.readyState = 1;
-						trigger(stream, "open");
-					}
-				},
-				// Called when a complete message has been received
-				message: function(data) {
-					if (stream.readyState === 1 || stream.readyState === 2) {
-						// Pseudo MessageEvent
-						trigger(stream, "message", {
-							// Converts the data type
-							data: stream.options.converters[stream.options.dataType](data), 
-							origin: "", 
-							lastEventId: "", 
-							source: null, 
-							ports: null
-						});
-					}
-				},
-				// Called when a connection has been closed
-				close: function() {
-					if (stream.readyState < 3) {
-						stream.readyState = 3;
-						
-						// Pseudo CloseEvent
-						trigger(stream, "close", {
-							// Presumes that the stream closed cleanly
-							wasClean: true, 
-							code: null, 
-							reason: ""
-						});
-						
-						// Reconnect?
-						if (stream.options.reconnect) {
-							$.stream(url, options);
-						}
-					}
-				},
-				// Called when a connection has been closed due to an error
-				error: function() {
-					var readyState = stream.readyState;
-					if (readyState < 3) {
-						stream.readyState = 3;
-						
-						// Prevents reconnecting
-						stream.options.reconnect = false;
-						
-						// If establishing a connection fails, fires the close event instead of the error event 
-						if (readyState === 0) {
-							// Pseudo CloseEvent
-							trigger(stream, "close", {
-								wasClean: false, 
-								code: null, 
-								reason: ""
-							});
-						} else {
-							trigger(stream, "error");
-						}
 					}
 				}
 			}), message);
@@ -508,7 +520,7 @@
 						return;
 					}
 					
-					on.read(xhr.responseText);
+					on.onread(xhr.responseText);
 					
 					// For Opera
 					if ($.browser.opera && !polling) {
@@ -520,7 +532,7 @@
 							}
 							
 							if (xhr.responseText.length > message.index) {
-								on.read(xhr.responseText);
+								on.onread(xhr.responseText);
 							}
 						}, stream.options.operaInterval);
 					}
@@ -529,7 +541,7 @@
 				case 4:
 					// HTTP status 0 could mean that the request is terminated by abort method
 					// but it's not error in Stream object
-					on[xhr.status !== 200 && preStatus !== 200 ? "error" : "close"]();
+					on[xhr.status !== 200 && preStatus !== 200 ? "onerror" : "onclose"]();
 					break;
 				}
 			};
@@ -581,7 +593,7 @@
 							try {
 								$.noop(cdoc.fileSize);
 							} catch(e) {
-								on.error();
+								on.onerror();
 								return false;
 							}
 						}
@@ -616,13 +628,13 @@
 						}
 						
 						// Handles open event
-						on.read(readResponse());
+						on.onread(readResponse());
 						
 						// Handles message and close event
 						stop = iterate(function() {
 							var text = readResponse();
 							if (text.length > message.index) {
-								on.read(text);
+								on.onread(text);
 								
 								// Empties response every time that it is handled
 								response.innerText = "";
@@ -630,7 +642,7 @@
 							}
 
 							if (cdoc.readyState === "complete") {
-								on.close();
+								on.onclose();
 								return false;
 							}
 						}, stream.options.iframeInterval);
@@ -644,7 +656,7 @@
 					}
 					
 					doc.execCommand("Stop");
-					on.close();
+					on.onclose();
 				}
 			};
 		},
@@ -677,12 +689,12 @@
 			
 			// Handles open and message event
 			xdr.onprogress = function() {
-				on.read(xdr.responseText);
+				on.onread(xdr.responseText);
 			};
 			// Handles error event
-			xdr.onerror = on.error;
+			xdr.onerror = on.onerror;
 			// Handles close event
-			xdr.onload = on.close;
+			xdr.onload = on.onclose;
 			
 			return {
 				open: function() {
@@ -691,7 +703,7 @@
 				},
 				close: function() {
 					xdr.abort();
-					on.close();
+					on.onclose();
 				}
 			};
 		}
@@ -719,25 +731,6 @@
 		div.innerHTML = "<a href='" + url + "'/>";
 
 		return div.firstChild.href;
-	}
-	
-	function trigger(stream, event, props) {
-		event = event.type ? 
-			event : 
-			$.extend($.Event(event), {bubbles: false, cancelable: false}, props);
-		
-		var handlers = stream.options[event.type],
-			applyArgs = [event, stream];
-		
-		// Triggers local event handlers
-		for (var i = 0, length = handlers.length; i < length; i++) {
-			handlers[i].apply(stream.options.context, applyArgs);
-		}
-
-		if (stream.options.global) {
-			// Triggers global event handlers
-			$.event.trigger("stream" + event.type.substring(0, 1).toUpperCase() + event.type.substring(1), applyArgs);
-		}
 	}
 	
 	function prepareURL(url, data) {

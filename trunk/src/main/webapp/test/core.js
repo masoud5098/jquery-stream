@@ -565,12 +565,12 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 						return {
 							open: function() {
 								var text = "";
-								on.read(text += "id;padding;");
-								on.read(text += "5;Hello;");
+								on.onread(text += "id;padding;");
+								on.onread(text += "5;Hello;");
 							},
 							close: function() {
 								closed = true;
-								on.close();
+								on.onclose();
 							}
 						};
 					}
@@ -596,7 +596,7 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 			});
 		});
 		
-		asyncTest("Adding transport using on.open and on.message", function() {
+		asyncTest("Adding transport using on.onopen and on.onmessage", function() {
 			var closed = false;
 			$.stream.setup({
 				transports: {
@@ -605,12 +605,12 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 						
 						return {
 							open: function() {
-								on.open();
-								on.message("Hello");
+								on.onopen();
+								on.onmessage({data: "Hello"});
 							},
 							close: function() {
 								closed = true;
-								on.close();
+								on.onclose();
 							}
 						};
 					}
@@ -642,11 +642,11 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 					test: function(stream, on) {
 						return {
 							open: function() {
-								on.read("id;     ");
+								on.onread("id;     ");
 							},
 							close: function() {
 								ok(true);
-								on.close();
+								on.onclose();
 							}
 						};
 					}
@@ -669,12 +669,12 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 						return {
 							open: function() {
 								var text = "";
-								on.read(text += "id;padding;");
-								on.read(text += "char;hello;");
+								on.onread(text += "id;padding;");
+								on.onread(text += "char;hello;");
 							},
 							close: function() {
 								ok(true);
-								on.close();
+								on.onclose();
 							}
 						};
 					}
@@ -700,12 +700,12 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 						return {
 							open: function() {
 								var text = "";
-								on.read(text += "id;padding;");								
-								on.read(text += "3;black;");
+								on.onread(text += "id;padding;");								
+								on.onread(text += "3;black;");
 							},
 							close: function() {
 								ok(true);
-								on.close();
+								on.onclose();
 							}
 						};
 					}
