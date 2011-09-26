@@ -523,33 +523,24 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 			});
 		});
 
-		test("Choosing transport", 4, function() {
-			$.stream.setup({
-				transports: {
-					mock: function() {
-						ok(true);
-						
-						return {
-							open: function() {},
-							close: function() {}
-						};
-					}
-				},
-				handleSend: function() {
+		test("Choosing transport", 2, function() {
+			$.stream.transport("mock", function(stream) {
+				ok(true);
+				stream.options.handleSend = function() {
 					return false;
-				}
+				};
+				
+				return {
+					open: function() {},
+					close: function() {}
+				};
 			});
 			
 			$.stream("1", {
-				transport: "mock"
+				type: "mock"
 			});
 			$.stream("2", {
-				transport: function(defaults, stream) {
-					equal(defaults, stream.options.enableXDR && window.XDomainRequest ? "xdr" : 
-						window.ActiveXObject ? "iframe" : 
-						window.XMLHttpRequest ? "xhr" : null);
-					equal(stream.url, "2");
-					
+				type: function() {
 					return "mock";
 				}
 			});
@@ -557,31 +548,28 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 
 		asyncTest("Adding transport", function() {
 			var closed = false;
-			$.stream.setup({
-				transports: {
-					mock: function(stream, on) {
-						ok(true);
-						
-						return {
-							open: function() {
-								var text = "";
-								on.onread(text += "id;padding;");
-								on.onread(text += "5;Hello;");
-							},
-							close: function() {
-								closed = true;
-								on.onclose();
-							}
-						};
-					}
-				},
-				handleSend: function() {
+			
+			$.stream.transport("mock", function(stream, eh) {
+				ok(true);
+				stream.options.handleSend = function() {
 					return false;
-				}
+				};
+
+				return {
+					open: function() {
+						var text = "";
+						eh.onread(text += "id;padding;");
+						eh.onread(text += "5;Hello;");
+					},
+					close: function() {
+						closed = true;
+						eh.onclose();
+					}
+				};
 			});
 			
 			$.stream("1", {
-				transport: "mock",
+				type: "mock",
 				open: function(event, stream) {
 					equal(stream.id, "id");
 				},
@@ -596,32 +584,29 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 			});
 		});
 		
-		asyncTest("Adding transport using on.onopen and on.onmessage", function() {
+		asyncTest("Adding transport using eh.onopen and eh.onmessage", function() {
 			var closed = false;
-			$.stream.setup({
-				transports: {
-					mock: function(stream, on) {
-						ok(true);
-						
-						return {
-							open: function() {
-								on.onopen();
-								on.onmessage({data: "Hello"});
-							},
-							close: function() {
-								closed = true;
-								on.onclose();
-							}
-						};
-					}
-				},
-				handleSend: function() {
-					return false;
-				}
-			});
 			
+			$.stream.transport("mock", function(stream, eh) {
+				ok(true);
+				stream.options.handleSend = function() {
+					return false;
+				};
+
+				return {
+					open: function() {
+						eh.onopen();
+						eh.onmessage({data: "Hello"});
+					},
+					close: function() {
+						closed = true;
+						eh.onclose();
+					}
+				};
+			});
+						
 			$.stream("1", {
-				transport: "mock",
+				type: "mock",
 				open: function(event, stream) {
 					ok(true);
 				},
@@ -637,55 +622,51 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 		});
 
 		asyncTest("Parsing message - invalid open", function() {
-			$.stream.setup({
-				transports: {
-					test: function(stream, on) {
-						return {
-							open: function() {
-								on.onread("id;     ");
-							},
-							close: function() {
-								ok(true);
-								on.onclose();
-							}
-						};
-					}
-				},
-				handleSend: function() {
+			$.stream.transport("test", function(stream, eh) {
+				ok(true);
+				stream.options.handleSend = function() {
 					return false;
-				}
+				};
+
+				return {
+					open: function() {
+						eh.onread("id;     ");
+					},
+					close: function() {
+						ok(true);
+						eh.onclose();
+					}
+				};
 			});
 			
 			$.stream("stream", {
-				transport: "test",
+				type: "test",
 				close: start
 			});
 		});
 		
 		asyncTest("Parsing message - invalid message with NaN size", function() {
-			$.stream.setup({
-				transports: {
-					test: function(stream, on) {
-						return {
-							open: function() {
-								var text = "";
-								on.onread(text += "id;padding;");
-								on.onread(text += "char;hello;");
-							},
-							close: function() {
-								ok(true);
-								on.onclose();
-							}
-						};
-					}
-				},
-				handleSend: function() {
+			$.stream.transport("test", function(stream, eh) {
+				ok(true);
+				stream.options.handleSend = function() {
 					return false;
-				}
+				};
+
+				return {
+					open: function() {
+						var text = "";
+						eh.onread(text += "id;padding;");
+						eh.onread(text += "char;hello;");
+					},
+					close: function() {
+						ok(true);
+						eh.onclose();
+					}
+				};
 			});
 			
 			$.stream("stream", {
-				transport: "test",
+				type: "test",
 				open: function() {
 					ok(true);
 				},
@@ -694,29 +675,27 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 		});
 		
 		asyncTest("Parsing message - invalid message with wrong size", function() {
-			$.stream.setup({
-				transports: {
-					test: function(stream, on) {
-						return {
-							open: function() {
-								var text = "";
-								on.onread(text += "id;padding;");								
-								on.onread(text += "3;black;");
-							},
-							close: function() {
-								ok(true);
-								on.onclose();
-							}
-						};
-					}
-				},
-				handleSend: function() {
+			$.stream.transport("test", function(stream, eh) {
+				ok(true);
+				stream.options.handleSend = function() {
 					return false;
-				}
+				};
+
+				return {
+					open: function() {
+						var text = "";
+						eh.onread(text += "id;padding;");
+						eh.onread(text += "3;black;");
+					},
+					close: function() {
+						ok(true);
+						eh.onclose();
+					}
+				};
 			});
 			
 			$.stream("stream", {
-				transport: "test",
+				type: "test",
 				open: function() {
 					ok(true);
 				},
