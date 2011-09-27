@@ -492,7 +492,6 @@
 		// XMLHttpRequest
 		xhr: function(stream, eh) {
 			var stop,
-				polling, 
 				preStatus, 
 				xhr = new window.XMLHttpRequest();
 			
