@@ -507,14 +507,8 @@
 					eh.onread(xhr.responseText);
 					
 					// For Opera
-					if ($.browser.opera && !polling) {
-						polling = true;
-						
+					if ($.browser.opera && !stop) {
 						stop = iterate(function() {
-							if (xhr.readyState === 4) {
-								return false;
-							}
-							
 							if (xhr.responseText.length > eh.message.index) {
 								eh.onread(xhr.responseText);
 							}
@@ -523,6 +517,10 @@
 					break;
 				// Handles error or close event
 				case 4:
+					if (stop) {
+						stop();
+					}
+					
 					// HTTP status 0 could mean that the request is terminated by abort method
 					// but it's not error in Stream object
 					eh[xhr.status !== 200 && preStatus !== 200 ? "onerror" : "onclose"]();
@@ -536,10 +534,6 @@
 					xhr.send();
 				},
 				close: function() {
-					if (stop) {
-						stop();
-					}
-					
 					// Saves status
 					try {
 						preStatus = xhr.status;
