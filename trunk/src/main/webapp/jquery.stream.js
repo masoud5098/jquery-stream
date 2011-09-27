@@ -102,7 +102,7 @@
 			stream.options.type = "http";
 		}
 		
-		// Create a socket with the stream event handlers
+		// Create a socket with the stream event handler
 		socket = sockets[stream.options.type](stream, {
 			// Called when a connection has been established
 			onopen: function(event) {
@@ -149,7 +149,7 @@
 					
 					// Reconnect?
 					if (stream.options.reconnect && readyState) {
-						$.stream(url, stream.options);
+						$.stream(url, options);
 					}
 				}
 			},
@@ -178,6 +178,21 @@
 						}
 					}
 				}
+			},
+			// Helper for preparing the URL 
+			url: function() {
+				var data = stream.options.openData;
+				
+				// Converts data into a query string
+				if (data && typeof data !== "string") {
+					data = param(data);
+				}
+				
+				// Attaches a time stamp to prevent caching
+				var ts = $.now(),
+					ret = url.replace(/([?&])_=[^&]*/, "$1_=" + ts);
+
+				return ret + (ret === url ? (/\?/.test(url) ? "&" : "?") + "_=" + ts : "") + (data ? ("&" + data) : "");
 			}
 		});
 		
@@ -271,7 +286,7 @@
 		// WebSocket
 		ws: function(stream, eh) {
 			var // Absolute WebSocket URL
-				url = prepareURL(getAbsoluteURL(stream.url).replace(/^http/, "ws"), stream.options.openData),
+				url = getAbsoluteURL(eh.url()).replace(/^http/, "ws"),
 				// WebSocket constructor
 				WebSocket = window.WebSocket || window.MozWebSocket,
 				// WebSocket instance
@@ -529,7 +544,7 @@
 			
 			return {
 				open: function() {
-					xhr.open("GET", prepareURL(stream.url, stream.options.openData));
+					xhr.open("GET", eh.url());
 					xhr.send();
 				},
 				close: function() {
@@ -553,7 +568,7 @@
 			return {
 				open: function() {
 					var iframe = doc.createElement("iframe");
-					iframe.src = prepareURL(stream.url, stream.options.openData);
+					iframe.src = eh.url();
 					
 					doc.body.appendChild(iframe);
 					
@@ -679,7 +694,7 @@
 			
 			return {
 				open: function() {
-					xdr.open("GET", prepareURL(rewriteURL(stream.url), stream.options.openData));
+					xdr.open("GET", rewriteURL(eh.url()));
 					xdr.send();
 				},
 				close: function() {
@@ -712,19 +727,6 @@
 		div.innerHTML = "<a href='" + url + "'/>";
 
 		return div.firstChild.href;
-	}
-	
-	function prepareURL(url, data) {
-		// Converts data into a query string
-		if (data && typeof data !== "string") {
-			data = param(data);
-		}
-		
-		// Attaches a time stamp to prevent caching
-		var ts = $.now(),
-			ret = url.replace(/([?&])_=[^&]*/, "$1_=" + ts);
-
-		return ret + (ret === url ? (/\?/.test(url) ? "&" : "?") + "_=" + ts : "") + (data ? ("&" + data) : "");
 	}
 	
 	function param(data) {
