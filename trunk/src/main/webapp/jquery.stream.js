@@ -196,6 +196,8 @@
 			}
 		});
 		
+		socket.open();
+		
 		// The url and alias are a identifier of this instance within the document
 		instances[url] = stream;
 		if (stream.options.alias) {
@@ -275,6 +277,10 @@
 			// transport: null
 		},
 		
+		socket: function(name, fn) {
+			sockets[name] = fn;
+		},
+		
 		transport: function(name, fn) {
 			transports[name] = fn;
 		}
@@ -285,17 +291,21 @@
 		
 		// WebSocket
 		ws: function(stream, eh) {
-			var // Absolute WebSocket URL
-				url = getAbsoluteURL(eh.url()).replace(/^http/, "ws"),
-				// WebSocket constructor
-				WebSocket = window.WebSocket || window.MozWebSocket,
-				// WebSocket instance
-				ws = stream.options.protocols ? new WebSocket(url, stream.options.protocols) : new WebSocket(url);
-			
-			// Adds event handlers
-			$.extend(ws, eh);
+			var // WebSocket instance
+				ws;
 			
 			return {
+				open: function() {
+					var // Absolute WebSocket URL
+						url = getAbsoluteURL(eh.url()).replace(/^http/, "ws"),
+						// WebSocket constructor
+						WebSocket = window.WebSocket || window.MozWebSocket;
+					
+					ws = stream.options.protocols ? new WebSocket(url, stream.options.protocols) : new WebSocket(url);
+					
+					// Adds event handlers
+					$.extend(ws, eh);	
+				},
 				send: function(data) {
 					ws.send(typeof data === "string" ? data : param(data));
 				},
@@ -424,47 +434,48 @@
 				},
 				message: message
 			}));
-
-			// Deals with the throbber of doom
-			if (!throbber) {
-				setTimeout(transport.open, 1);
-			} else {
-				switch (stream.options.throbber.type || stream.options.throbber) {
-				case "lazy":
-					$(window).load(function() {
-						setTimeout(transport.open, stream.options.throbber.delay || 50);
-					});
-					break;
-				case "reconnect":
-					transport.open();
-					$(window).load(function() {
-						if (stream.readyState === 0) {
-							stream.options.open.push(function() {
-								stream.options.open.pop();
-								setTimeout(reconnect, 10);
-							});
-						} else {
-							reconnect();
-						}
-						
-						function reconnect() {
-							stream.options.close.push(function() {
-								stream.options.close.pop();
-								setTimeout(function() {
-									$.stream(stream.url, stream.options);
-								}, stream.options.throbber.delay || 50);
-							});
-							
-							var reconn = stream.options.reconnect;
-							stream.close();
-							stream.options.reconnect = reconn;
-						}
-					});
-					break;
-				}
-			}
 			
 			return {
+				open: function() {
+					// Deals with the throbber of doom
+					if (!throbber) {
+						setTimeout(transport.open, 0);
+					} else {
+						switch (stream.options.throbber.type || stream.options.throbber) {
+						case "lazy":
+							$(window).load(function() {
+								setTimeout(transport.open, stream.options.throbber.delay || 50);
+							});
+							break;
+						case "reconnect":
+							transport.open();
+							$(window).load(function() {
+								if (stream.readyState === 0) {
+									stream.options.open.push(function() {
+										stream.options.open.pop();
+										setTimeout(reconnect, 10);
+									});
+								} else {
+									reconnect();
+								}
+								
+								function reconnect() {
+									stream.options.close.push(function() {
+										stream.options.close.pop();
+										setTimeout(function() {
+											$.stream(stream.url, stream.options);
+										}, stream.options.throbber.delay || 50);
+									});
+									
+									var reconn = stream.options.reconnect;
+									stream.close();
+									stream.options.reconnect = reconn;
+								}
+							});
+							break;
+						}
+					}
+				},
 				send: function(data) {
 					// Pushes the data into the queue
 					dataQueue.push(data);
