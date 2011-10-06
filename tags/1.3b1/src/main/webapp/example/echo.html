@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Echo</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<script type="text/javascript" src="../jquery.js"></script>
+		<script type="text/javascript" src="../jquery.stream.js"></script>
+		<script type="text/javascript">
+		$.stream.setup({enableXDR: true});
+
+		$(function() {
+			$.stream("echo", {
+				open: function() {
+					$("#textfield").removeAttr("disabled").focus();
+				},
+				message: function(event) {
+					$("<p />").text(event.data).prependTo("#content");
+				},
+				error: function() {
+					$("#textfield").attr("disabled", "disabled");
+				},
+				close: function() {
+					$("#textfield").attr("disabled", "disabled");
+				}
+			});
+			
+			$("#textfield").keyup(function(event) {
+				if (event.which === 13 && $.trim(this.value)) {
+					$.stream().send({message: this.value});
+					this.value = "";
+				}
+			});
+		});
+		</script>
+		<style>
+		body {padding: 0; margin: 0; font-family: 'Trebuchet MS','Malgun Gothic'; font-size: 62.5%; color: #333333}
+		#editor {margin: 15px 25px;}
+		#textfield {width: 100%; height: 28px; line-height: 28px; font-family: 'Trebuchet MS','Malgun Gothic'; 
+					border: medium none; border-color: #E5E5E5 #DBDBDB #D2D2D2; border-style: solid; border-width: 1px;}
+		#content {height: 100%; overflow-y: auto; padding: 0 25px;}
+		#content p {margin: 0; padding: 0; font-size: 1.3em; color: #444444; line-height: 1.7em; word-wrap: break-word;}
+		</style>
+	</head>
+	<body>
+		<div id="editor">
+			<input id="textfield" type="text" disabled="disabled" />
+		</div>
+		<div id="content"></div>
+	</body>
+</html>

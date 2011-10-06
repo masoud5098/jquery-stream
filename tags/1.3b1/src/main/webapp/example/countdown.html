@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Countdown</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+		<script type="text/javascript" src="../jquery.js"></script>
+		<script type="text/javascript" src="../jquery.stream.js"></script>
+		<script type="text/javascript">
+		$.stream.setup({enableXDR: true});
+
+		$(function() {
+			$.stream("countdown.jsp", {type: "http", reconnect: false});
+			
+			$(document)
+			.streamOpen(function(e) {
+				$("<p />").appendTo("body").text("Open");
+			})
+			.streamMessage(function(e, event) {
+				$("<p />").appendTo("body").text(event.data);
+			})
+			.streamError(function() {
+				$("<p />").appendTo("body").text("Error");
+			})
+			.streamClose(function() {
+				$("<p />").appendTo("body").text("Close");
+			});
+		});
+		</script>
+	</head>
+	<body>
+	</body>
+</html>
