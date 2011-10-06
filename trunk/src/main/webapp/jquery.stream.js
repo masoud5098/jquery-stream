@@ -492,7 +492,6 @@
 		// XMLHttpRequest: Modern browsers except Internet Explorer
 		xhr: function(stream, handler, message) {
 			var stop,
-				polling, 
 				preStatus, 
 				xhr = new window.XMLHttpRequest();
 			
@@ -507,14 +506,8 @@
 					handler.response(xhr.responseText);
 					
 					// For Opera
-					if ($.browser.opera && !polling) {
-						polling = true;
-						
+					if ($.browser.opera && !stop) {
 						stop = iterate(function() {
-							if (xhr.readyState === 4) {
-								return false;
-							}
-							
 							if (xhr.responseText.length > message.index) {
 								handler.response(xhr.responseText);
 							}
@@ -523,6 +516,10 @@
 					break;
 				// Handles error or close event
 				case 4:
+					if (stop) {
+						stop();
+					}
+					
 					// HTTP status 0 could mean that the request is terminated by abort method
 					// but it's not error in Stream object
 					handler.close(xhr.status !== 200 && preStatus !== 200);
@@ -536,10 +533,6 @@
 					xhr.send();
 				},
 				close: function() {
-					if (stop) {
-						stop();
-					}
-					
 					// Saves status
 					try {
 						preStatus = xhr.status;
