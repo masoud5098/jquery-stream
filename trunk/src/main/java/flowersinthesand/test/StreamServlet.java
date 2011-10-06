@@ -55,6 +55,10 @@ public class StreamServlet extends WebSocketServlet {
 						+ "                                                                    "
 						+ "                                                                 -->");
 			}
+		} else if (Boolean.valueOf(request.getParameter("invalidOpen"))) {
+			writer.print(id);
+			writer.print(differentFormat ? "\r\n" : ";");
+			writer.print(Arrays.toString(new float[200]).replaceAll(".", " "));
 		} else {
 			writer.print(id);
 			writer.print(differentFormat ? "\r\n" : ";");
@@ -110,6 +114,26 @@ public class StreamServlet extends WebSocketServlet {
 				}
 
 			}, 100);
+		} else if (Boolean.valueOf(request.getParameter("invalidMessage1"))) {
+			new Timer().schedule(new TimerTask() {
+
+				@Override
+				public void run() {
+					writer.print("char;hello;");
+					writer.flush();
+				}
+
+			}, 100);
+		} else if (Boolean.valueOf(request.getParameter("invalidMessage2"))) {
+			new Timer().schedule(new TimerTask() {
+
+				@Override
+				public void run() {
+					writer.print("3;black;");
+					writer.flush();
+				}
+
+			}, 100);
 		}
 		if (Boolean.valueOf(request.getParameter("close"))) {
 			ac.setTimeout(150);
@@ -121,12 +145,12 @@ public class StreamServlet extends WebSocketServlet {
 			throws ServletException, IOException {
 		request.setCharacterEncoding("utf-8");
 
-		AsyncContext ac = asyncContexts.get(request.getHeader("x-jquery-stream-id"));
+		AsyncContext ac = asyncContexts.get(request.getParameter("metadata.id"));
 		if (ac == null) {
 			return;
 		}
 
-		if ("close".equals(request.getHeader("x-jquery-stream-type"))) {
+		if ("close".equals(request.getParameter("metadata.type"))) {
 			ac.complete();
 			return;
 		}

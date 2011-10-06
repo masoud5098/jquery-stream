@@ -468,10 +468,7 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 				handleSend: function(type, options, stream) {
 					switch (type) {
 					case "close":
-						options.headers = {
-							"x-jquery-stream-id": stream.id,
-							"x-jquery-stream-type": type
-						};
+						options.data = {"metadata.type": type, "metadata.id": stream.id};
 						break;
 					default:
 						if (options.data.message % 2) {
@@ -479,10 +476,7 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 						}
 					
 						$.extend(true, options, {
-							headers: {
-								"x-jquery-stream-id": stream.id,
-								"x-jquery-stream-type": type
-							},
+							data: {"metadata.type": type, "metadata.id": stream.id},
 							success: function() {
 								ok(true);
 							}
@@ -522,184 +516,43 @@ $.each({http: "HTTP Streaming", ws: "WebSocket"}, function(type, moduleName) {
 				}
 			});
 		});
-
-		test("Choosing transport", 2, function() {
-			$.stream.transport("mock", function(stream) {
-				ok(true);
-				stream.options.handleSend = function() {
-					return false;
-				};
-				
-				return {
-					open: function() {},
-					close: function() {}
-				};
-			});
-			
-			$.stream("1", {
-				type: "mock"
-			});
-			$.stream("2", {
-				type: function() {
-					return "mock";
-				}
-			});
-		});
-
-		asyncTest("Adding transport", function() {
-			var closed = false;
-			
-			$.stream.transport("mock", function(stream, eh) {
-				ok(true);
-				stream.options.handleSend = function() {
-					return false;
-				};
-
-				return {
-					open: function() {
-						var text = "";
-						eh.onread(text += "id;padding;");
-						eh.onread(text += "5;Hello;");
-					},
-					close: function() {
-						closed = true;
-						eh.onclose();
-					}
-				};
-			});
-			
-			$.stream("1", {
-				type: "mock",
-				open: function(event, stream) {
-					equal(stream.id, "id");
-				},
-				message: function(event, stream) {
-					equal(event.data, "Hello");
-					stream.close();
-				},
-				close: function() {
-					ok(closed);
+		
+		asyncTest("should close connection - invalid open", function() {
+			var ts = new Date().getTime();
+			$.stream("stream", {
+				openData: {invalidOpen: true},
+				close: function(event) {
+					ok(new Date().getTime() - ts < 3000);
 					start();
 				}
 			});
 		});
 		
-		asyncTest("Adding transport using eh.onopen and eh.onmessage", function() {
-			var closed = false;
-			
-			$.stream.transport("mock", function(stream, eh) {
-				ok(true);
-				stream.options.handleSend = function() {
-					return false;
-				};
-
-				return {
-					open: function() {
-						eh.onopen();
-						eh.onmessage({data: "Hello"});
-					},
-					close: function() {
-						closed = true;
-						eh.onclose();
-					}
-				};
-			});
-						
-			$.stream("1", {
-				type: "mock",
-				open: function(event, stream) {
+		asyncTest("should close connection - invalid message with NaN size", function() {
+			var ts = new Date().getTime();
+			$.stream("stream", {
+				openData: {invalidMessage1: true},
+				open: function() {
 					ok(true);
 				},
-				message: function(event, stream) {
-					equal(event.data, "Hello");
-					stream.close();
-				},
 				close: function() {
-					ok(closed);
+					ok(new Date().getTime() - ts < 3000);
 					start();
 				}
 			});
 		});
-
-		asyncTest("Parsing message - invalid open", function() {
-			$.stream.transport("test", function(stream, eh) {
-				ok(true);
-				stream.options.handleSend = function() {
-					return false;
-				};
-
-				return {
-					open: function() {
-						eh.onread("id;     ");
-					},
-					close: function() {
-						ok(true);
-						eh.onclose();
-					}
-				};
-			});
-			
-			$.stream("stream", {
-				type: "test",
-				close: start
-			});
-		});
 		
-		asyncTest("Parsing message - invalid message with NaN size", function() {
-			$.stream.transport("test", function(stream, eh) {
-				ok(true);
-				stream.options.handleSend = function() {
-					return false;
-				};
-
-				return {
-					open: function() {
-						var text = "";
-						eh.onread(text += "id;padding;");
-						eh.onread(text += "char;hello;");
-					},
-					close: function() {
-						ok(true);
-						eh.onclose();
-					}
-				};
-			});
-			
+		asyncTest("should close connection - invalid message with wrong size", function() {
+			var ts = new Date().getTime();
 			$.stream("stream", {
-				type: "test",
+				openData: {invalidMessage2: true},
 				open: function() {
 					ok(true);
 				},
-				close: start
-			});
-		});
-		
-		asyncTest("Parsing message - invalid message with wrong size", function() {
-			$.stream.transport("test", function(stream, eh) {
-				ok(true);
-				stream.options.handleSend = function() {
-					return false;
-				};
-
-				return {
-					open: function() {
-						var text = "";
-						eh.onread(text += "id;padding;");
-						eh.onread(text += "3;black;");
-					},
-					close: function() {
-						ok(true);
-						eh.onclose();
-					}
-				};
-			});
-			
-			$.stream("stream", {
-				type: "test",
-				open: function() {
-					ok(true);
-				},
-				close: start
+				close: function() {
+					ok(new Date().getTime() - ts < 3000);
+					start();
+				}
 			});
 		});
 	}
