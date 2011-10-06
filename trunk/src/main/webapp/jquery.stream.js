@@ -229,7 +229,7 @@
 					trigger(stream, event);
 
 					// Reconnect?
-					if (stream.options.reconnect && !readyState) {
+					if (stream.options.reconnect && readyState) {
 						$.stream(stream.url, stream.options);
 					}
 				}
