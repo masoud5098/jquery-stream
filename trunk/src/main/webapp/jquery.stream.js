@@ -162,7 +162,7 @@
 		
 		options: {
 			// Stream type
-			type: window.WebSocket ? "ws" : "http",
+			type: window.MozWebSocket || window.WebSocket ? "ws" : "http",
 			// Whether to automatically reconnect when stream closed
 			reconnect: true,
 			// Whether to trigger global stream event handlers
@@ -195,14 +195,19 @@
 
 		// WebSocket wrapper
 		ws: function(stream) {
-			if (!window.WebSocket) {
+			var // WebSocket constructor
+				WebSocket = window.MozWebSocket || window.WebSocket,
+				// Absolute WebSocket URL
+				url = prepareURL(getAbsoluteURL(stream.url).replace(/^http/, "ws"), stream.options.openData),
+				// WebSocket instance
+				ws;
+			
+			if (!WebSocket) {
 				return;
 			}
 			
-			var // Absolute WebSocket URL
-				url = prepareURL(getAbsoluteURL(stream.url).replace(/^http/, "ws"), stream.options.openData),
-				// WebSocket instance
-				ws = stream.options.protocols ? new window.WebSocket(url, stream.options.protocols) : new window.WebSocket(url);
+			// WebSocket instance
+			ws = stream.options.protocols ? new WebSocket(url, stream.options.protocols) : new WebSocket(url);
 			
 			// WebSocket event handlers
 			$.extend(ws, {
