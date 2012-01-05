@@ -16,6 +16,7 @@ import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -25,8 +26,7 @@ import org.eclipse.jetty.websocket.WebSocketServlet;
 
 import com.google.gson.Gson;
 
-// Jetty 8.0.0 M3 does not seem to support new annotations.
-// @WebServlet(urlPatterns = "/chat", asyncSupported = true)
+@WebServlet(urlPatterns = "/chat", asyncSupported = true)
 public class ChatServlet extends WebSocketServlet {
 
 	private static final long serialVersionUID = 4805728426990609124L;
