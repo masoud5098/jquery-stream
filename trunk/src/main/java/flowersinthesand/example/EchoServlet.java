@@ -10,6 +10,7 @@ import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -17,6 +18,7 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketServlet;
 
+@WebServlet(urlPatterns = "/example/echo", asyncSupported = true)
 public class EchoServlet extends WebSocketServlet {
 
 	private static final long serialVersionUID = -8823775068689773674L;

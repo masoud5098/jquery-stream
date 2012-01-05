@@ -13,6 +13,7 @@ import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -20,6 +21,7 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketServlet;
 
+@WebServlet(urlPatterns = "/test/stream", asyncSupported = true)
 public class StreamServlet extends WebSocketServlet {
 
 	private static final long serialVersionUID = -7525476704378017593L;
@@ -196,7 +198,7 @@ public class StreamServlet extends WebSocketServlet {
 					}
 				}
 				if (Boolean.valueOf(request.getParameter("close"))) {
-					connection.disconnect();
+					connection.close();
 				}
 			}
 
