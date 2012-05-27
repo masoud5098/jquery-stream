@@ -295,7 +295,13 @@
 				stream.id = text.substring(0, text.indexOf(";"));
 				
 				// message.index = text.indexOf(";", stream.id.length + ";".length) + ";".length;
-				message.index = text.indexOf(";", stream.id.length + 1) + 1;
+				// tonyg 20120525: If the current chunk doesn't include the end-of-padding marker,
+				// don't accept the header until it does.
+				var semiPos = text.indexOf(";", stream.id.length + 1);
+				if (semiPos < 0) {
+					return false;
+				}
+				message.index = semiPos + 1;
 				
 				// The text must contain id;padding;
 				if (text.charAt(stream.id.length) !== ";" || !message.index) {

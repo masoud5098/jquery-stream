@@ -57,10 +57,6 @@ public class StreamServlet extends WebSocketServlet {
 						+ "                                                                    "
 						+ "                                                                 -->");
 			}
-		} else if (Boolean.valueOf(request.getParameter("invalidOpen"))) {
-			writer.print(id);
-			writer.print(differentFormat ? "\r\n" : ";");
-			writer.print(Arrays.toString(new float[200]).replaceAll(".", " "));
 		} else {
 			writer.print(id);
 			writer.print(differentFormat ? "\r\n" : ";");
